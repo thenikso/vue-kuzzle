@@ -1,24 +1,27 @@
 /* eslint no-unused-vars: 0 */
 
-import Vue, { AsyncComponent } from 'vue'
+import Vue, { AsyncComponent } from 'vue';
 import { Kuzzle } from 'kuzzle-sdk';
-import { VueKuzzleComponentOption } from './options'
-import { WatchLoading, ErrorHandler, VueKuzzleOptions } from './options'
+import { VueKuzzleComponentOption } from './options';
+import { WatchLoading, ErrorHandler, VueKuzzleOptions } from './options';
 
-export type VueKuzzleComponent<V extends Vue = Vue> = VueKuzzleComponentOption<V> | typeof Vue | AsyncComponent;
+export type VueKuzzleComponent<V extends Vue = Vue> =
+  | VueKuzzleComponentOption<V>
+  | typeof Vue
+  | AsyncComponent;
 
 export class KuzzleProvider {
-  constructor (options: {
-    defaultClient: Kuzzle,
-    defaultIndex?: string,
-    defaultCollection?: string,
-    defaultOptions?: VueKuzzleOptions<any>,
-    clients?: { [key: string]: Kuzzle },
-    watchLoading?: WatchLoading<any>,
-    errorHandler?: ErrorHandler<any>
-  })
-  clients: { [key: string]: Kuzzle }
-  defaultClient: Kuzzle
+  constructor(options: {
+    defaultClient: Kuzzle;
+    defaultIndex?: string;
+    defaultCollection?: string;
+    defaultOptions?: VueKuzzleOptions<any>;
+    clients?: { [key: string]: Kuzzle };
+    watchLoading?: WatchLoading<any>;
+    errorHandler?: ErrorHandler<any>;
+  });
+  clients: { [key: string]: Kuzzle };
+  defaultClient: Kuzzle;
   defaultIndex?: string;
   defaultCollection?: string;
 

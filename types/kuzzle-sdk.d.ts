@@ -13,7 +13,7 @@ declare module 'kuzzle-sdk' {
         // Kuzzle server port
         port?: number;
         // Use SSL to connect to Kuzzle server
-        sslConnection?: boolean = false;
+        sslConnection?: boolean;
       },
     );
   }
@@ -23,13 +23,13 @@ declare module 'kuzzle-sdk' {
       host: string,
       options?: {
         // Kuzzle server port
-        port: number = 7512;
+        port: number;
         // Use SSL to connect to Kuzzle server
-        sslConnection: boolean = false;
+        sslConnection: boolean;
         // Automatically reconnect to kuzzle after a `disconnected` event
-        autoReconnect: boolean = true;
+        autoReconnect: boolean;
         // Number of milliseconds between reconnection attempts
-        reconnectionDelay: number = 1000;
+        reconnectionDelay: number;
       },
     );
   }
@@ -48,23 +48,23 @@ declare module 'kuzzle-sdk' {
       protocol: Protocol,
       options?: {
         // Automatically queue all requests during offline mode
-        autoQueue: boolean = false;
+        autoQueue: boolean;
         // Automatically replay queued requests on a `reconnected` event
-        autoReplay: boolean = false;
+        autoReplay: boolean;
         // Automatically renew all subscriptions on a `reconnected` event
-        autoResubscribe: boolean = true;
+        autoResubscribe: boolean;
         // Time (in ms) during which a similar event is ignored
-        eventTimeout: number = 200;
+        eventTimeout: number;
         // Offline mode configuration. Can be manual or auto
-        offlineMode: string = 'manual';
+        offlineMode: string;
         // Time a queued request is kept during offline mode, in milliseconds
-        queueTTL: number = 120000;
+        queueTTL: number;
         // Number of maximum requests kept during offline mode
-        queueMaxSize: number = 500;
+        queueMaxSize: number;
         // Delay between each replayed requests, in milliseconds
-        replayInterval: number = 10;
+        replayInterval: number;
         // Common volatile data, will be sent to all future requests
-        volatile: object = {};
+        volatile: object;
       },
     );
 
@@ -301,14 +301,14 @@ declare module 'kuzzle-sdk' {
         // Query options
         options?: {
           // Subscribe to document entering or leaving the scope
-          scope?: KuzzleScope = 'all';
+          scope?: KuzzleScope;
           // Subscribe to users entering or leaving the room
-          users?: KuzzleScope = 'none';
+          users?: KuzzleScope;
           // Subscribe to notifications fired by our own queries
-          subscribeToSelf?: boolean = true;
+          subscribeToSelf?: boolean;
           // subscription information, used in user
           // [join/leave notifications](https://docs-v2.kuzzle.io/api/1/essentials/volatile-data/)
-          volatile?: object | null = null;
+          volatile?: object | null;
         },
       ): Promise<string>;
 
@@ -347,27 +347,27 @@ declare module 'kuzzle-sdk' {
 
   export type QueryOptions = {
     // If true, queues the request during downtime, until connected to Kuzzle again.
-    queuable?: boolean = true;
+    queuable?: boolean;
   };
 
   export type RefreshQueryOptions = QueryOptions & {
     // If set to `wait_for`, waits for the change to be reflected for `search` (up to 1s)
-    refresh?: '' | 'wait_for' = '';
+    refresh?: '' | 'wait_for';
   };
 
   export type UpdateOptions = RefreshQueryOptions & {
     // The number of times the database layer should retry in case of version conflict
-    retryOnConflict?: number = 0;
+    retryOnConflict?: number;
   };
 
   export type SearchOptions = QueryOptions & {
     // Offset of the first document to fetch
-    from?: number = 0;
+    from?: number;
     // Maximum number of documents to retrieve per page
-    size?: number = 10;
+    size?: number;
     // When set, gets a forward-only cursor having its ttl set to the given value
     // ie: `30s`; cf https://www.elastic.co/guide/en/elasticsearch/reference/5.6/common-options.html#time-units
-    scroll?: string = '';
+    scroll?: string;
   };
 
   export interface KuzzleMetadata {
@@ -415,7 +415,7 @@ declare module 'kuzzle-sdk' {
     _version: number;
   }
 
-  export abstract interface KuzzleMResponse<T> {
+  export interface KuzzleMResponse<T> {
     total: number;
     hits: T[];
   }

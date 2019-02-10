@@ -23,7 +23,6 @@ interface ExtendableVueKuzzleQueryOptions<V, R> {
   client?: string;
   index?: string;
   collection?: string;
-  update?: (this: VueKuzzleThisType<V>, data: any, response: any) => any;
   result?: (this: VueKuzzleThisType<V>, data: R, loader: any) => void;
   error?: ErrorHandler<V>;
   loadingKey?: string;

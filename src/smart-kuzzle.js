@@ -78,6 +78,12 @@ export default class SmartKuzzle {
     this._skip = value;
   }
 
+  get hasMore() {
+    return false;
+  }
+
+  fetchMore() {}
+
   async refresh() {
     if (!this._skip) {
       await this.stop();

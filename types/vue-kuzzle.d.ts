@@ -24,18 +24,17 @@ export class VueKuzzle extends KuzzleProvider implements PluginObject<{}> {
 
 interface SmartKuzzle<V> {
   readonly loading: boolean;
+  readonly hasMore: boolean;
   skip: boolean;
-  refresh(): void;
-  start(): void;
-  stop(): void;
+  refresh(): Promise<void>;
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  fetchMore(): Promise<void>;
 }
 
 export interface SmartDocument<V> extends SmartKuzzle<V> {}
 
-export interface SmartSearch<V> extends SmartKuzzle<V> {
-  readonly hasMore: boolean;
-  fetchMore(): void;
-}
+export interface SmartSearch<V> extends SmartKuzzle<V> {}
 
 type DollarKuzzleOptions = {
   client?: string;
