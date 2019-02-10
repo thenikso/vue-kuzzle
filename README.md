@@ -7,11 +7,14 @@ This project is heavily inspired (copied) from the excellent [vue-apollo](https:
 
 ## Installation
 
-:warning: This plugin is still not present in `npm`, install it with
+:warning: This plugin is not yet published to `npm`. Install it with:
 
 ```bash
 npm install --save git+https://github.com/thenikso/vue-kuzzle.git
 ```
+
+Then you want to build it by navigating to `node_modules/vue-kuzzle` and
+`yarn && yarn build`.
 
 ### 1. Kuzzle SDK
 
