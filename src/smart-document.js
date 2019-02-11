@@ -1,7 +1,6 @@
 import SmartKuzzle from './smart-kuzzle';
 
 export default class SmartQuery extends SmartKuzzle {
-  type = 'document';
 
   constructor(vm, key, options, autostart = true) {
     // Simple document query
@@ -13,6 +12,7 @@ export default class SmartQuery extends SmartKuzzle {
     }
 
     super(vm, key, options, false);
+    this.type = 'document';
 
     this.firstRun = new Promise((resolve, reject) => {
       this._firstRunResolve = resolve;

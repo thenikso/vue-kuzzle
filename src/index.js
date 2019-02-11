@@ -39,9 +39,6 @@ export function install(Vue, options) {
 
 plugin.install = install;
 
-// eslint-disable-next-line no-undef
-plugin.version = VERSION;
-
 // Kuzzle provider
 export const KuzzleProvider = plugin;
 

@@ -97,7 +97,7 @@ export class DollarKuzzle {
       options,
       'searchDocuments',
     );
-    const _kuzzle_response = this.getClient(options).document.search(
+    const _kuzzle_response = await this.getClient(options).document.search(
       index,
       collection,
       {
@@ -110,7 +110,7 @@ export class DollarKuzzle {
         size: (options && options.size) || 10,
       },
     );
-    const hits = [..._kuzzle_response.hits];
+    const hits = (_kuzzle_response.hits || []).slice();
     hits._kuzzle_response = _kuzzle_response;
     return hits;
   }

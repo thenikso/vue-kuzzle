@@ -1,6 +1,11 @@
 import SmartKuzzle from './smart-kuzzle';
 
 export default class SmartSearch extends SmartKuzzle {
+  constructor(vm, key, options, autostart = true) {
+    super(vm, key, options, false);
+    this.type = 'search';
+  }
+
   async executeKuzzle() {
     const search = this.options.search;
 
