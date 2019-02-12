@@ -153,14 +153,14 @@ export class DollarKuzzle {
     );
     let _kuzzle_response;
     if (options && options.replace === true) {
-      _kuzzle_response = this.getClient(options).document.replace(
+      _kuzzle_response = await this.getClient(options).document.replace(
         index,
         collection,
         id,
         doc,
       );
     }
-    _kuzzle_response = this.getClient(options).document.update(
+    _kuzzle_response = await this.getClient(options).document.update(
       index,
       collection,
       id,
