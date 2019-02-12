@@ -132,6 +132,9 @@ export class DollarKuzzle {
         collection,
         options && options.id,
         doc,
+        {
+          refresh: 'wait_for',
+        },
       );
     }
     _kuzzle_response = await this.getClient(options).document.create(
@@ -139,6 +142,9 @@ export class DollarKuzzle {
       collection,
       doc,
       options && options.id,
+      {
+        refresh: 'wait_for',
+      },
     );
     return {
       ..._kuzzle_response._source,
@@ -158,6 +164,9 @@ export class DollarKuzzle {
         collection,
         id,
         doc,
+        {
+          refresh: 'wait_for',
+        },
       );
     }
     _kuzzle_response = await this.getClient(options).document.update(
@@ -165,6 +174,9 @@ export class DollarKuzzle {
       collection,
       id,
       doc,
+      {
+        refresh: 'wait_for',
+      },
     );
     return {
       ..._kuzzle_response._source,
@@ -177,7 +189,9 @@ export class DollarKuzzle {
       options,
       'deleteDocument',
     );
-    return this.getClient(options).document.delete(index, collection, id);
+    return this.getClient(options).document.delete(index, collection, id, {
+      refresh: 'wait_for',
+    });
   }
 
   addSmartDocumentOrSearch(key, options) {
