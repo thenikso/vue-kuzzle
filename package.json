@@ -18,6 +18,14 @@
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs"
   },
+  "files": [
+    "package.json",
+    "LICENSE",
+    "README.md",
+    "yarn.lock",
+    "dist/*",
+    "types/*"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/thenikso/vue-kuzzle.git"
