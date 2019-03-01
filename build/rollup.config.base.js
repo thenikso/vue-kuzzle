@@ -19,6 +19,7 @@ export default {
     }),
     babel({
       exclude: 'node_modules/**',
+      runtimeHelpers: true,
     }),
     replace({
       VERSION: JSON.stringify(config.version),
