@@ -11,10 +11,10 @@
     "build:browser": "rollup --config build/rollup.config.browser.js",
     "build:es": "rollup --config build/rollup.config.es.js",
     "build:umd": "rollup --config build/rollup.config.umd.js",
-    "prepublishOnly": "yarn test && yarn build",
+    "prepublishOnly": "yarn build",
     "dev": "nodemon --exec 'yarn build:es && yarn build:umd' --watch src",
     "test": "yarn build && yarn test:eslint",
-    "test:eslint": "eslint --ext .js {src,lib,build}/**/*.js",
+    "test:eslint": "eslint --ext .js {src,build}/**/*.js",
     "docs:dev": "vuepress dev docs",
     "docs:build": "vuepress build docs"
   },
