@@ -7,6 +7,7 @@ const config = require('../package.json')
 
 export default {
   input: 'src/index.js',
+  external: ['kuzzle-sdk'],
   plugins: [
     resolve({
       jsnext: true,
