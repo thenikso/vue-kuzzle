@@ -1,9 +1,1 @@
 node_modules/
-types/test/*.js
-docs/.vuepress/dist/
-dist/
-
-# These are here untill I port them
-docs/
-tests/
-src/components/
