@@ -1,5 +1,3 @@
-import { Globals } from '../lib/utils';
-
 function hasProperty(holder, key) {
   return (
     typeof holder !== 'undefined' &&

@@ -1,5 +1,3 @@
-import { throttle, debounce, omit } from '../lib/utils';
-
 export default class SmartKuzzle {
   constructor(vm, key, options, autostart = true) {
     this.type = null;

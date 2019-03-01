@@ -6,13 +6,11 @@ import { KuzzleProvider as plugin } from './kuzzle-provider';
 // import CKuzzleMutation from './components/KuzzleMutation';
 
 import { installMixin } from './mixin';
-import { Globals, omit } from '../lib/utils';
 
 export function install(Vue, options) {
   if (install.installed) return;
   install.installed = true;
 
-  Globals.Vue = Vue;
   const vueVersion = Vue.version.substr(0, Vue.version.indexOf('.'));
 
   // Lazy creation

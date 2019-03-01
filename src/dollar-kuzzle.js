@@ -1,6 +1,5 @@
 import SmartDocument from './smart-document';
 import SmartSearch from './smart-search';
-import { reapply } from '../lib/utils';
 
 export class DollarKuzzle {
   constructor(vm) {
@@ -195,7 +194,11 @@ export class DollarKuzzle {
   }
 
   addSmartDocumentOrSearch(key, options) {
-    let finalOptions = reapply(options, this.vm);
+    let finalOptions = options;
+    // reapply
+    while (typeof finalOptions === 'function') {
+      finalOptions = finalOptions.call(this.vm)
+    }
 
     let smart;
     if (typeof finalOptions.document !== 'undefined') {
