@@ -32,7 +32,10 @@ interface SmartKuzzle<V> {
   fetchMore(): Promise<void>;
 }
 
-export interface SmartDocument<V> extends SmartKuzzle<V> {}
+export interface SmartDocument<V> extends SmartKuzzle<V> {
+  change(newDoc: any): Promise<any>;
+  readonly changeRun: Promise<any>;
+}
 
 export interface SmartSearch<V> extends SmartKuzzle<V> {}
 
@@ -76,7 +79,9 @@ type WithKuzzleResponse<R, K> = R & {
 
 export interface DollarKuzzle<V> {
   vm: V;
-  queries:  Record<string, SmartKuzzle<V>>;
+  readonly queries: Record<string, SmartKuzzle<V>>;
+  readonly documents: Record<string, SmartDocument<V>>;
+  readonly searches: Record<string, SmartSearch<V>>;
   readonly provider: KuzzleProvider;
   readonly loading: boolean;
 

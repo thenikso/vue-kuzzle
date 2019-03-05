@@ -144,6 +144,8 @@ export function installMixin(Vue, vueVersion) {
             return {
               $kuzzleData: {
                 queries: {},
+                documents: {},
+                searches: {},
                 loading: 0,
                 data: this.$_kuzzleInitData,
               },

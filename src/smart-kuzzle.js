@@ -17,22 +17,7 @@ export default class SmartKuzzle {
     }
 
     this._hasDataField = this.vm.$data.hasOwnProperty(key);
-
-    if (!options.manual) {
-      if (this._hasDataField) {
-        Object.defineProperty(this.vm.$data.$kuzzleData.data, key, {
-          get: () => this.vm.$data[key],
-          enumerable: true,
-          configurable: true,
-        });
-      } else {
-        Object.defineProperty(this.vm.$data, key, {
-          get: () => this.vm.$data.$kuzzleData.data[key],
-          enumerable: true,
-          configurable: true,
-        });
-      }
-    }
+    this._initData();
 
     if (autostart) {
       this.autostart();
@@ -196,7 +181,28 @@ export default class SmartKuzzle {
     this.starting = false;
   }
 
+  _initData() {
+    if (!this.options.manual) {
+      if (this._hasDataField) {
+        Object.defineProperty(this.vm.$data.$kuzzleData.data, this.key, {
+          get: () => this.vm.$data[key],
+          enumerable: true,
+          configurable: true,
+        });
+      } else {
+        Object.defineProperty(this.vm.$data, this.key, {
+          get: () => this.vm.$data.$kuzzleData.data[key],
+          enumerable: true,
+          configurable: true,
+        });
+      }
+    }
+  }
+
   setData(value) {
+    if (typeof value === 'object') {
+      Object.freeze(value);
+    }
     this.vm.$set(
       this._hasDataField ? this.vm.$data : this.vm.$data.$kuzzleData.data,
       this.key,

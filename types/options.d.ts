@@ -1,6 +1,7 @@
 import {
   KuzzleDocumentGetResponse,
   KuzzleDocumentSearchResponse,
+  KuzzleDocumentUpdateResponse,
 } from 'kuzzle-sdk';
 
 type VueKuzzleThisType<V> = V & { [key: string]: any };
@@ -18,6 +19,19 @@ export type VueKuzzleSearchConfig = {
   from?: number;
   size?: number;
 };
+export type ChangeContext = {
+  index: string;
+  collection: string;
+  id: string;
+  documentKey: string;
+  savedDocument: any;
+  updatedDocument: any;
+};
+export type ChangeFilter<V> = (
+  this: VueKuzzleThisType<V>,
+  changeDocument: any,
+  changeContext: ChangeContext,
+) => any;
 
 interface ExtendableVueKuzzleQueryOptions<V, R> {
   client?: string;
@@ -39,8 +53,10 @@ export interface VueKuzzleDocumentOptions<V, R>
   update?: (
     this: VueKuzzleThisType<V>,
     data: R,
-    doc: KuzzleDocumentGetResponse<R>,
+    resp: KuzzleDocumentGetResponse<R> | KuzzleDocumentUpdateResponse,
+    op: 'get' | 'subscription' | 'update' | 'replace',
   ) => any;
+  changeFilter?: ChangeFilter<V>;
 }
 
 export interface VueKuzzleSearchOptions<V, R>

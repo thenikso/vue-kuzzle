@@ -3,7 +3,12 @@
 import Vue, { AsyncComponent } from 'vue';
 import { Kuzzle } from 'kuzzle-sdk';
 import { VueKuzzleComponentOption } from './options';
-import { WatchLoading, ErrorHandler, VueKuzzleOptions } from './options';
+import {
+  WatchLoading,
+  ErrorHandler,
+  VueKuzzleOptions,
+  ChangeFilter,
+} from './options';
 
 export type VueKuzzleComponent<V extends Vue = Vue> =
   | VueKuzzleComponentOption<V>
@@ -19,6 +24,7 @@ export class KuzzleProvider {
     clients?: { [key: string]: Kuzzle };
     watchLoading?: WatchLoading<any>;
     errorHandler?: ErrorHandler<any>;
+    changeFilter?: ChangeFilter<V>;
   });
   clients: { [key: string]: Kuzzle };
   defaultClient: Kuzzle;

@@ -1,5 +1,6 @@
 import SmartDocument from './smart-document';
 import SmartSearch from './smart-search';
+import { reapply } from './utils';
 
 export class DollarKuzzle {
   constructor(vm) {
@@ -8,6 +9,8 @@ export class DollarKuzzle {
 
     this.vm = vm;
     this.queries = {};
+    this.documents = {};
+    this.searches = {};
     this.client = undefined;
     this.loadingKey = undefined;
     this.error = undefined;
@@ -194,22 +197,18 @@ export class DollarKuzzle {
   }
 
   addSmartDocumentOrSearch(key, options) {
-    let finalOptions = options;
-    // reapply
-    while (typeof finalOptions === 'function') {
-      finalOptions = finalOptions.call(this.vm)
-    }
+    const finalOptions = reapply(options, this.vm);
 
     let smart;
     if (typeof finalOptions.document !== 'undefined') {
-      smart = this.queries[key] = new SmartDocument(
+      smart = this.queries[key] = this.documents[key] = new SmartDocument(
         this.vm,
         key,
         finalOptions,
         false,
       );
     } else if (finalOptions.search !== 'undefined') {
-      smart = this.queries[key] = new SmartSearch(
+      smart = this.queries[key] = this.searches[key] = new SmartSearch(
         this.vm,
         key,
         finalOptions,

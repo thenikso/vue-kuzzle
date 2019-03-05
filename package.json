@@ -1,6 +1,6 @@
 {
   "name": "vue-kuzzle",
-  "version": "1.0.0-beta.3",
+  "version": "0.3.0",
   "description": "Use Kuzzle with Vue.js",
   "main": "dist/vue-kuzzle.umd.js",
   "module": "dist/vue-kuzzle.esm.js",
@@ -44,6 +44,7 @@
     "kuzzle-sdk": "^6.0.0"
   },
   "dependencies": {
+    "fast-deep-equal": "2.0.1",
     "throttle-debounce": "^2.1.0"
   },
   "devDependencies": {
