@@ -185,13 +185,13 @@ export default class SmartKuzzle {
     if (!this.options.manual) {
       if (this._hasDataField) {
         Object.defineProperty(this.vm.$data.$kuzzleData.data, this.key, {
-          get: () => this.vm.$data[key],
+          get: () => this.vm.$data[this.key],
           enumerable: true,
           configurable: true,
         });
       } else {
         Object.defineProperty(this.vm.$data, this.key, {
-          get: () => this.vm.$data.$kuzzleData.data[key],
+          get: () => this.vm.$data.$kuzzleData.data[this.key],
           enumerable: true,
           configurable: true,
         });

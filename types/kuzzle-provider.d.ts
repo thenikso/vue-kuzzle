@@ -1,5 +1,3 @@
-/* eslint no-unused-vars: 0 */
-
 import Vue, { AsyncComponent } from 'vue';
 import { Kuzzle } from 'kuzzle-sdk';
 import { VueKuzzleComponentOption } from './options';
@@ -24,7 +22,7 @@ export class KuzzleProvider {
     clients?: { [key: string]: Kuzzle };
     watchLoading?: WatchLoading<any>;
     errorHandler?: ErrorHandler<any>;
-    changeFilter?: ChangeFilter<V>;
+    changeFilter?: ChangeFilter<any>;
   });
   clients: { [key: string]: Kuzzle };
   defaultClient: Kuzzle;
