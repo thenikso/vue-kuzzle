@@ -78,7 +78,7 @@ export default class SmartQuery extends SmartKuzzle {
         notificaiton =>
           this.nextResult(
             notificaiton.result._source,
-            notificaiton,
+            notificaiton.result,
             'subscription',
           ),
         {
@@ -210,7 +210,11 @@ export default class SmartQuery extends SmartKuzzle {
         ](this.index, this.collection, this.options.document, changeDoc, {
           refresh: 'wait_for',
         });
-        let returnDoc = newDoc;
+        let returnDoc = (await this.client.document.get(
+          this.index,
+          this.collection,
+          updateResp._id,
+        ))._source;
         if (typeof this.options.update === 'function') {
           returnDoc = await Promise.resolve(
             this.options.update.call(
