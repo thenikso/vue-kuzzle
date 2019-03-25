@@ -173,7 +173,7 @@ export default class SmartQuery extends SmartKuzzle {
 
   change(newDoc) {
     this.setLoading();
-    this.changeRun = this.changeRun.then(async savedDoc => {
+    const thisChangeRun = this.changeRun = this.changeRun.then(async savedDoc => {
       const isUpdate =
         savedDoc &&
         Object.keys(savedDoc).every(key => newDoc.hasOwnProperty(key));
@@ -225,7 +225,9 @@ export default class SmartQuery extends SmartKuzzle {
             ),
           );
         }
-        this.setData(returnDoc);
+        if (this.changeRun === thisChangeRun) {
+          this.setData(returnDoc);
+        }
         this.loadingDone();
         return returnDoc;
       } catch (error) {
