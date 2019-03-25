@@ -1,6 +1,6 @@
 {
   "name": "vue-kuzzle",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Use Kuzzle with Vue.js",
   "main": "dist/vue-kuzzle.umd.js",
   "module": "dist/vue-kuzzle.esm.js",
