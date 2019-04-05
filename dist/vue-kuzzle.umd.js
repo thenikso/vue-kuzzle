@@ -211,8 +211,6 @@
   /*#__PURE__*/
   function () {
     function SmartKuzzle(vm, key, options) {
-      var _this = this;
-
       var autostart = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : true;
 
       _classCallCheck(this, SmartKuzzle);
@@ -233,27 +231,11 @@
         });
       }
 
+      this._initOptions();
+
       this._hasDataField = this.vm.$data.hasOwnProperty(key);
 
-      if (!options.manual) {
-        if (this._hasDataField) {
-          Object.defineProperty(this.vm.$data.$kuzzleData.data, key, {
-            get: function get() {
-              return _this.vm.$data[key];
-            },
-            enumerable: true,
-            configurable: true
-          });
-        } else {
-          Object.defineProperty(this.vm.$data, key, {
-            get: function get() {
-              return _this.vm.$data.$kuzzleData.data[key];
-            },
-            enumerable: true,
-            configurable: true
-          });
-        }
-      }
+      this._initData();
 
       if (autostart) {
         this.autostart();
@@ -323,7 +305,7 @@
     }, {
       key: "start",
       value: function start() {
-        var _this2 = this;
+        var _this = this;
 
         this.starting = true; // Document callback
 
@@ -332,9 +314,9 @@
           this.options.document = cb();
 
           this._watchers.push(this.vm.$watch(cb, function (res) {
-            _this2.options.document = res;
+            _this.options.document = res;
 
-            _this2.refresh();
+            _this.refresh();
           }, {
             deep: this.options.deep
           }));
@@ -347,9 +329,9 @@
           this.options.search = _cb();
 
           this._watchers.push(this.vm.$watch(_cb, function (res) {
-            _this2.options.search = res;
+            _this.options.search = res;
 
-            _this2.refresh();
+            _this.refresh();
           }, {
             deep: this.options.deep
           }));
@@ -444,8 +426,51 @@
         this.starting = false;
       }
     }, {
+      key: "_initOptions",
+      value: function _initOptions() {
+        if (typeof this.initialOptions.document === 'function') {
+          var cb = this.initialOptions.document.bind(this.vm);
+          this.options.document = cb();
+        }
+
+        if (typeof this.initialOptions.search === 'function') {
+          var _cb2 = this.initialOptions.search.bind(this.vm);
+
+          this.options.search = _cb2();
+        }
+      }
+    }, {
+      key: "_initData",
+      value: function _initData() {
+        var _this2 = this;
+
+        if (!this.options.manual) {
+          if (this._hasDataField) {
+            Object.defineProperty(this.vm.$data.$kuzzleData.data, this.key, {
+              get: function get() {
+                return _this2.vm.$data[_this2.key];
+              },
+              enumerable: true,
+              configurable: true
+            });
+          } else {
+            Object.defineProperty(this.vm.$data, this.key, {
+              get: function get() {
+                return _this2.vm.$data.$kuzzleData.data[_this2.key];
+              },
+              enumerable: true,
+              configurable: true
+            });
+          }
+        }
+      }
+    }, {
       key: "setData",
       value: function setData(value) {
+        if (_typeof(value) === 'object') {
+          Object.freeze(value);
+        }
+
         this.vm.$set(this._hasDataField ? this.vm.$data : this.vm.$data.$kuzzleData.data, this.key, value);
       }
     }, {
@@ -607,6 +632,94 @@
     return SmartKuzzle;
   }();
 
+  function getRootChanges(reference, obj) {
+    var res = {};
+
+    for (var key in obj) {
+      if (!eq(obj[key], reference[key], true)) {
+        res[key] = obj[key];
+      }
+    }
+
+    return res;
+  }
+  function reapply(options, context) {
+    while (typeof options === 'function') {
+      options = options.call(context);
+    }
+
+    return options;
+  }
+  var isArray = Array.isArray;
+  var keyList = Object.keys;
+  var hasProp = Object.prototype.hasOwnProperty;
+
+  var definedKeyList = function definedKeyList(obj) {
+    var res = [];
+    var keys = keyList(obj);
+
+    for (var index = 0; index < keys.length; index++) {
+      var key = keys[index];
+
+      if (typeof obj[key] !== 'undefined') {
+        res.push(key);
+      }
+    }
+
+    return res;
+  }; // https://github.com/epoberezkin/fast-deep-equal
+
+
+  function eq(a, b, ignoreUndefined) {
+    if (a === b) return true;
+
+    if (a && b && _typeof(a) == 'object' && _typeof(b) == 'object') {
+      var arrA = isArray(a);
+      var arrB = isArray(b);
+      var i;
+      var length;
+      var key;
+
+      if (arrA && arrB) {
+        length = a.length;
+        if (length != b.length) return false;
+
+        for (i = length; i-- !== 0;) {
+          if (!eq(a[i], b[i], ignoreUndefined)) return false;
+        }
+
+        return true;
+      }
+
+      if (arrA != arrB) return false;
+      var dateA = a instanceof Date;
+      var dateB = b instanceof Date;
+      if (dateA != dateB) return false;
+      if (dateA && dateB) return a.getTime() == b.getTime();
+      var regexpA = a instanceof RegExp;
+      var regexpB = b instanceof RegExp;
+      if (regexpA != regexpB) return false;
+      if (regexpA && regexpB) return a.toString() == b.toString();
+      var keysA = ignoreUndefined ? definedKeyList(a) : keyList(a);
+      var keysB = keyList(b);
+      length = keysA.length;
+      if (length !== keysB.length) return false;
+
+      for (i = length; i-- !== 0;) {
+        if (!hasProp.call(b, keysA[i])) return false;
+      }
+
+      for (i = length; i-- !== 0;) {
+        key = keysA[i];
+        if (!eq(a[key], b[key], ignoreUndefined)) return false;
+      }
+
+      return true;
+    }
+
+    return a !== a && b !== b;
+  }
+
   var SmartQuery =
   /*#__PURE__*/
   function (_SmartKuzzle) {
@@ -627,6 +740,11 @@
 
       _this = _possibleConstructorReturn(this, _getPrototypeOf(SmartQuery).call(this, vm, key, options, false));
       _this.type = 'document';
+
+      if (vm.$data.$kuzzleData && !vm.$data.$kuzzleData.documents[key]) {
+        vm.$set(vm.$data.$kuzzleData.documents, key, vm.$data.$kuzzleData.queries[key]);
+      }
+
       _this.firstRun = new Promise(function (resolve, reject) {
         _this._firstRunResolve = resolve;
         _this._firstRunReject = reject;
@@ -658,22 +776,26 @@
 
                 case 6:
                   response = _context.sent;
-                  this.firstRunResolve();
-                  this.loadingDone();
-                  _context.next = 15;
-                  break;
 
-                case 11:
-                  _context.prev = 11;
-                  _context.t0 = _context["catch"](3);
-                  this.firstRunReject();
-                  this.catchError(_context.t0);
-
-                case 15:
-                  if (response) {
-                    this.nextResult(response, response);
+                  if (!response) {
+                    _context.next = 10;
+                    break;
                   }
 
+                  _context.next = 10;
+                  return this.nextResult(response._source, response, 'get');
+
+                case 10:
+                  this.loadingDone(null, response._source);
+                  _context.next = 16;
+                  break;
+
+                case 13:
+                  _context.prev = 13;
+                  _context.t0 = _context["catch"](3);
+                  this.catchError(_context.t0);
+
+                case 16:
                   if (!subscribe) {
                     _context.next = 19;
                     break;
@@ -690,7 +812,7 @@
                   return _context.stop();
               }
             }
-          }, _callee, this, [[3, 11]]);
+          }, _callee, this, [[3, 13]]);
         }));
 
         function executeKuzzle() {
@@ -726,7 +848,7 @@
                       values: [id]
                     }
                   }, function (notificaiton) {
-                    return _this2.nextResult(notificaiton.result, notificaiton);
+                    return _this2.nextResult(notificaiton.result._source, notificaiton.result, 'subscription');
                   }, {
                     subscribeToSelf: false
                   });
@@ -757,19 +879,54 @@
       }()
     }, {
       key: "nextResult",
-      value: function nextResult(doc, response) {
-        if (!doc) {
-          return;
+      value: function () {
+        var _nextResult = _asyncToGenerator(
+        /*#__PURE__*/
+        regeneratorRuntime.mark(function _callee3(doc, response, operation) {
+          var respDoc;
+          return regeneratorRuntime.wrap(function _callee3$(_context3) {
+            while (1) {
+              switch (_context3.prev = _context3.next) {
+                case 0:
+                  if (doc) {
+                    _context3.next = 2;
+                    break;
+                  }
+
+                  return _context3.abrupt("return");
+
+                case 2:
+                  if (!(typeof this.options.update === 'function')) {
+                    _context3.next = 9;
+                    break;
+                  }
+
+                  _context3.next = 5;
+                  return Promise.resolve(this.options.update.call(this.vm, doc, response, operation));
+
+                case 5:
+                  respDoc = _context3.sent;
+                  this.setData(respDoc);
+                  _context3.next = 10;
+                  break;
+
+                case 9:
+                  this.setData(doc);
+
+                case 10:
+                case "end":
+                  return _context3.stop();
+              }
+            }
+          }, _callee3, this);
+        }));
+
+        function nextResult(_x2, _x3, _x4) {
+          return _nextResult.apply(this, arguments);
         }
 
-        var data = doc._source;
-
-        if (typeof this.options.update === 'function') {
-          this.setData(this.options.update.call(this.vm, data, response));
-        } else {
-          this.setData(data);
-        }
-      }
+        return nextResult;
+      }()
     }, {
       key: "setLoading",
       value: function setLoading() {
@@ -808,9 +965,7 @@
       }
     }, {
       key: "loadingDone",
-      value: function loadingDone() {
-        var error = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
-
+      value: function loadingDone(error, data) {
         if (this.loading) {
           this.applyLoadingModifier(-1);
         }
@@ -818,7 +973,10 @@
         this.loading = false;
 
         if (!error) {
-          this.firstRunResolve();
+          this.changeRun = this.firstRun;
+          this.firstRunResolve(data);
+        } else {
+          this.firstRunReject(error);
         }
       }
     }, {
@@ -826,39 +984,43 @@
       value: function () {
         var _refetch = _asyncToGenerator(
         /*#__PURE__*/
-        regeneratorRuntime.mark(function _callee3() {
+        regeneratorRuntime.mark(function _callee4() {
           var response;
-          return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          return regeneratorRuntime.wrap(function _callee4$(_context4) {
             while (1) {
-              switch (_context3.prev = _context3.next) {
+              switch (_context4.prev = _context4.next) {
                 case 0:
                   this.setLoading();
-                  _context3.prev = 1;
-                  _context3.next = 4;
+                  _context4.prev = 1;
+                  _context4.next = 4;
                   return this.client.document.get(this.index, this.collection, this.options.document);
 
                 case 4:
-                  response = _context3.sent;
+                  response = _context4.sent;
                   this.loadingDone();
-                  _context3.next = 11;
+                  _context4.next = 11;
                   break;
 
                 case 8:
-                  _context3.prev = 8;
-                  _context3.t0 = _context3["catch"](1);
-                  this.catchError(_context3.t0);
+                  _context4.prev = 8;
+                  _context4.t0 = _context4["catch"](1);
+                  this.catchError(_context4.t0);
 
                 case 11:
-                  if (response) {
-                    this.nextResult(response, response);
+                  if (!response) {
+                    _context4.next = 14;
+                    break;
                   }
 
-                case 12:
+                  _context4.next = 14;
+                  return this.nextResult(response._source, response, 'get');
+
+                case 14:
                 case "end":
-                  return _context3.stop();
+                  return _context4.stop();
               }
             }
-          }, _callee3, this, [[1, 8]]);
+          }, _callee4, this, [[1, 8]]);
         }));
 
         function refetch() {
@@ -868,19 +1030,211 @@
         return refetch;
       }()
     }, {
+      key: "change",
+      value: function change(newDoc) {
+        var _this3 = this;
+
+        this.setLoading();
+
+        if (!this.changeRun) {
+          this.changeRun = Promise.resolve(null);
+        }
+
+        var thisChangeRun = this.changeRun = this.changeRun.then(
+        /*#__PURE__*/
+        function () {
+          var _ref = _asyncToGenerator(
+          /*#__PURE__*/
+          regeneratorRuntime.mark(function _callee5(savedDoc) {
+            var isUpdate, changeDoc, changeContext, changeFilter, updateResp, serverDoc, returnDoc;
+            return regeneratorRuntime.wrap(function _callee5$(_context5) {
+              while (1) {
+                switch (_context5.prev = _context5.next) {
+                  case 0:
+                    isUpdate = savedDoc && Object.keys(savedDoc).every(function (key) {
+                      return key === '_kuzzle_info' || newDoc.hasOwnProperty(key);
+                    });
+                    changeDoc = isUpdate ? getRootChanges(savedDoc, newDoc) : newDoc;
+                    changeContext = {
+                      index: _this3.index,
+                      collection: _this3.collection,
+                      id: _this3.options.document,
+                      documentKey: _this3.key,
+                      savedDocument: savedDoc,
+                      changedDocument: newDoc
+                    };
+                    changeFilter = _this3.options.changeFilter || _this3.vm.$kuzzle.changeFilter || _this3.vm.$kuzzle.provider.changeFilter;
+
+                    if (!(typeof changeFilter === 'function')) {
+                      _context5.next = 15;
+                      break;
+                    }
+
+                    _context5.prev = 5;
+                    _context5.next = 8;
+                    return Promise.resolve(changeFilter.call(_this3.vm, changeDoc, changeContext));
+
+                  case 8:
+                    changeDoc = _context5.sent;
+                    _context5.next = 15;
+                    break;
+
+                  case 11:
+                    _context5.prev = 11;
+                    _context5.t0 = _context5["catch"](5);
+
+                    _this3.catchError(_context5.t0);
+
+                    return _context5.abrupt("return", savedDoc);
+
+                  case 15:
+                    if (!(!changeDoc || Object.keys(changeDoc).length === 0)) {
+                      _context5.next = 18;
+                      break;
+                    }
+
+                    _this3.loadingDone();
+
+                    return _context5.abrupt("return", savedDoc);
+
+                  case 18:
+                    _context5.prev = 18;
+
+                    if (_this3.options.document) {
+                      _context5.next = 25;
+                      break;
+                    }
+
+                    _context5.next = 22;
+                    return _this3.client.document.create(_this3.index, _this3.collection, changeDoc, null, {
+                      refresh: 'wait_for'
+                    });
+
+                  case 22:
+                    updateResp = _context5.sent;
+                    _context5.next = 34;
+                    break;
+
+                  case 25:
+                    if (isUpdate) {
+                      _context5.next = 31;
+                      break;
+                    }
+
+                    _context5.next = 28;
+                    return _this3.client.document.createOrReplace(_this3.index, _this3.collection, _this3.options.document, changeDoc, {
+                      refresh: 'wait_for'
+                    });
+
+                  case 28:
+                    updateResp = _context5.sent;
+                    _context5.next = 34;
+                    break;
+
+                  case 31:
+                    _context5.next = 33;
+                    return _this3.client.document.update(_this3.index, _this3.collection, _this3.options.document, changeDoc, {
+                      refresh: 'wait_for'
+                    });
+
+                  case 33:
+                    updateResp = _context5.sent;
+
+                  case 34:
+                    _context5.next = 36;
+                    return _this3.client.document.get(_this3.index, _this3.collection, updateResp._id);
+
+                  case 36:
+                    serverDoc = _context5.sent._source;
+                    returnDoc = serverDoc;
+
+                    if (!(typeof _this3.options.update === 'function')) {
+                      _context5.next = 42;
+                      break;
+                    }
+
+                    _context5.next = 41;
+                    return Promise.resolve(_this3.options.update.call(_this3.vm, serverDoc, updateResp, updateResp.created ? 'created' : updateResp.result));
+
+                  case 41:
+                    returnDoc = _context5.sent;
+
+                  case 42:
+                    if (_this3.changeRun === thisChangeRun) {
+                      _this3.setData(returnDoc);
+                    }
+
+                    _this3.loadingDone();
+
+                    return _context5.abrupt("return", serverDoc);
+
+                  case 47:
+                    _context5.prev = 47;
+                    _context5.t1 = _context5["catch"](18);
+
+                    _this3.catchError(_context5.t1);
+
+                    return _context5.abrupt("return", savedDoc);
+
+                  case 51:
+                  case "end":
+                    return _context5.stop();
+                }
+              }
+            }, _callee5, null, [[5, 11], [18, 47]]);
+          }));
+
+          return function (_x5) {
+            return _ref.apply(this, arguments);
+          };
+        }());
+        return this.changeRun;
+      }
+    }, {
+      key: "_initData",
+      value: function _initData() {
+        var _this4 = this;
+
+        if (!this.options.manual) {
+          if (this._hasDataField) {
+            Object.defineProperty(this.vm.$data.$kuzzleData.data, this.key, {
+              get: function get() {
+                return _this4.vm.$data[key];
+              },
+              set: function set(value) {
+                return _this4.change(value);
+              },
+              enumerable: true,
+              configurable: true
+            });
+          } else {
+            Object.defineProperty(this.vm.$data, this.key, {
+              get: function get() {
+                return _this4.vm.$data.$kuzzleData.data[key];
+              },
+              set: function set(value) {
+                return _this4.change(value);
+              },
+              enumerable: true,
+              configurable: true
+            });
+          }
+        }
+      }
+    }, {
       key: "firstRunResolve",
-      value: function firstRunResolve() {
+      value: function firstRunResolve(data) {
         if (this._firstRunResolve) {
-          this._firstRunResolve();
+          this._firstRunResolve(data);
 
           this._firstRunResolve = null;
         }
       }
     }, {
       key: "firstRunReject",
-      value: function firstRunReject() {
+      value: function firstRunReject(err) {
         if (this._firstRunReject) {
-          this._firstRunReject();
+          this._firstRunReject(err);
 
           this._firstRunReject = null;
         }
@@ -1062,6 +1416,8 @@
       this._watchers = [];
       this.vm = vm;
       this.queries = {};
+      this.documents = {};
+      this.searches = {};
       this.client = undefined;
       this.loadingKey = undefined;
       this.error = undefined;
@@ -1328,18 +1684,13 @@
     }, {
       key: "addSmartDocumentOrSearch",
       value: function addSmartDocumentOrSearch(key, options) {
-        var finalOptions = options; // reapply
-
-        while (typeof finalOptions === 'function') {
-          finalOptions = finalOptions.call(this.vm);
-        }
-
+        var finalOptions = reapply(options, this.vm);
         var smart;
 
         if (typeof finalOptions.document !== 'undefined') {
-          smart = this.queries[key] = new SmartQuery(this.vm, key, finalOptions, false);
+          smart = this.queries[key] = this.documents[key] = new SmartQuery(this.vm, key, finalOptions, false);
         } else if (finalOptions.search !== 'undefined') {
-          smart = this.queries[key] = new SmartSearch(this.vm, key, finalOptions, false);
+          smart = this.queries[key] = this.searches[key] = new SmartSearch(this.vm, key, finalOptions, false);
         } else {
           throw new Error("[vue-kuzzle] Missing either 'document' or 'search' in 'kuzzle.".concat(key, "' options"));
         }
@@ -1488,6 +1839,7 @@
       this.defaultCollection = options.defaultCollection;
       this.watchLoading = options.watchLoading;
       this.errorHandler = options.errorHandler;
+      this.changeFilter = options.changeFilter;
       this.connectAll();
     }
 
@@ -1630,6 +1982,8 @@
         return {
           $kuzzleData: {
             queries: {},
+            documents: {},
+            searches: {},
             loading: 0,
             data: this.$_kuzzleInitData
           }
