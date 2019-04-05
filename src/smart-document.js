@@ -27,7 +27,7 @@ export default class SmartQuery extends SmartKuzzle {
       this._firstRunReject = reject;
     });
 
-    this.changeRun = this.firstRun.then(() => this.getData());
+    this.changeRun = this.firstRun;
 
     // if (this.vm.$isServer) {
     //   this.options.fetchPolicy = 'network-only';
@@ -50,7 +50,7 @@ export default class SmartQuery extends SmartKuzzle {
       if (response) {
         await this.nextResult(response._source, response, 'get');
       }
-      this.loadingDone();
+      this.loadingDone(null, response._source);
     } catch (error) {
       this.catchError(error);
     }
@@ -140,16 +140,16 @@ export default class SmartQuery extends SmartKuzzle {
     this.watchLoading(value === 1, value);
   }
 
-  loadingDone(error = null) {
+  loadingDone(error, data) {
     if (this.loading) {
       this.applyLoadingModifier(-1);
     }
     this.loading = false;
 
     if (!error) {
-      this.firstRunResolve();
+      this.firstRunResolve(data);
     } else {
-      this.firstRunReject();
+      this.firstRunReject(error);
     }
   }
 
@@ -173,68 +173,73 @@ export default class SmartQuery extends SmartKuzzle {
 
   change(newDoc) {
     this.setLoading();
-    const thisChangeRun = this.changeRun = this.changeRun.then(async savedDoc => {
-      const isUpdate =
-        savedDoc &&
-        Object.keys(savedDoc).every(key => newDoc.hasOwnProperty(key));
-      let changeDoc = isUpdate ? getRootChanges(savedDoc, newDoc) : newDoc;
-      const changeContext = {
-        index: this.index,
-        collection: this.collection,
-        id: this.options.document,
-        documentKey: this.key,
-        savedDocument: savedDoc,
-        changedDocument: newDoc,
-      };
-      const changeFilter =
-        this.options.changeFilter ||
-        this.vm.$kuzzle.changeFilter ||
-        this.vm.$kuzzle.provider.changeFilter;
-      if (typeof changeFilter === 'function') {
-        try {
-          changeDoc = await Promise.resolve(
-            changeFilter.call(this.vm, changeDoc, changeContext),
+    const thisChangeRun = (this.changeRun = this.changeRun.then(
+      async savedDoc => {
+        const isUpdate =
+          savedDoc &&
+          Object.keys(savedDoc).every(
+            key => key === '_kuzzle_info' || newDoc.hasOwnProperty(key),
           );
+        let changeDoc = isUpdate ? getRootChanges(savedDoc, newDoc) : newDoc;
+        const changeContext = {
+          index: this.index,
+          collection: this.collection,
+          id: this.options.document,
+          documentKey: this.key,
+          savedDocument: savedDoc,
+          changedDocument: newDoc,
+        };
+        const changeFilter =
+          this.options.changeFilter ||
+          this.vm.$kuzzle.changeFilter ||
+          this.vm.$kuzzle.provider.changeFilter;
+        if (typeof changeFilter === 'function') {
+          try {
+            changeDoc = await Promise.resolve(
+              changeFilter.call(this.vm, changeDoc, changeContext),
+            );
+          } catch (error) {
+            this.catchError(error);
+            return savedDoc;
+          }
+        }
+        if (!changeDoc || Object.keys(changeDoc).length === 0) {
+          this.loadingDone();
+          return savedDoc;
+        }
+        try {
+          const updateResp = await this.client.document[
+            isUpdate ? 'update' : 'createOrReplace'
+          ](this.index, this.collection, this.options.document, changeDoc, {
+            refresh: 'wait_for',
+          });
+          const serverDoc = (await this.client.document.get(
+            this.index,
+            this.collection,
+            updateResp._id,
+          ))._source;
+          let returnDoc = serverDoc;
+          if (typeof this.options.update === 'function') {
+            returnDoc = await Promise.resolve(
+              this.options.update.call(
+                this.vm,
+                serverDoc,
+                updateResp,
+                updateResp.created ? 'created' : updateResp.result,
+              ),
+            );
+          }
+          if (this.changeRun === thisChangeRun) {
+            this.setData(returnDoc);
+          }
+          this.loadingDone();
+          return serverDoc;
         } catch (error) {
           this.catchError(error);
           return savedDoc;
         }
-      }
-      if (!changeDoc || Object.keys(changeDoc).length === 0) {
-        this.loadingDone();
-        return savedDoc;
-      }
-      try {
-        const updateResp = await this.client.document[
-          isUpdate ? 'update' : 'createOrReplace'
-        ](this.index, this.collection, this.options.document, changeDoc, {
-          refresh: 'wait_for',
-        });
-        let returnDoc = (await this.client.document.get(
-          this.index,
-          this.collection,
-          updateResp._id,
-        ))._source;
-        if (typeof this.options.update === 'function') {
-          returnDoc = await Promise.resolve(
-            this.options.update.call(
-              this.vm,
-              returnDoc,
-              updateResp,
-              updateResp.created ? 'created' : updateResp.result,
-            ),
-          );
-        }
-        if (this.changeRun === thisChangeRun) {
-          this.setData(returnDoc);
-        }
-        this.loadingDone();
-        return returnDoc;
-      } catch (error) {
-        this.catchError(error);
-        return savedDoc;
-      }
-    });
+      },
+    ));
     return this.changeRun;
   }
 
@@ -258,16 +263,16 @@ export default class SmartQuery extends SmartKuzzle {
     }
   }
 
-  firstRunResolve() {
+  firstRunResolve(data) {
     if (this._firstRunResolve) {
-      this._firstRunResolve();
+      this._firstRunResolve(data);
       this._firstRunResolve = null;
     }
   }
 
-  firstRunReject() {
+  firstRunReject(err) {
     if (this._firstRunReject) {
-      this._firstRunReject();
+      this._firstRunReject(err);
       this._firstRunReject = null;
     }
   }
