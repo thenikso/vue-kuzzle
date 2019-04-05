@@ -27,8 +27,6 @@ export default class SmartQuery extends SmartKuzzle {
       this._firstRunReject = reject;
     });
 
-    this.changeRun = this.firstRun;
-
     // if (this.vm.$isServer) {
     //   this.options.fetchPolicy = 'network-only';
     // }
@@ -147,6 +145,7 @@ export default class SmartQuery extends SmartKuzzle {
     this.loading = false;
 
     if (!error) {
+      this.changeRun = this.firstRun;
       this.firstRunResolve(data);
     } else {
       this.firstRunReject(error);
@@ -173,6 +172,9 @@ export default class SmartQuery extends SmartKuzzle {
 
   change(newDoc) {
     this.setLoading();
+    if (!this.changeRun) {
+      this.changeRun = Promise.resolve(null);
+    }
     const thisChangeRun = (this.changeRun = this.changeRun.then(
       async savedDoc => {
         const isUpdate =
@@ -208,11 +210,38 @@ export default class SmartQuery extends SmartKuzzle {
           return savedDoc;
         }
         try {
-          const updateResp = await this.client.document[
-            isUpdate ? 'update' : 'createOrReplace'
-          ](this.index, this.collection, this.options.document, changeDoc, {
-            refresh: 'wait_for',
-          });
+          let updateResp;
+          if (!this.options.document) {
+            updateResp = await this.client.document.create(
+              this.index,
+              this.collection,
+              changeDoc,
+              null,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          } else if (!isUpdate) {
+            updateResp = await this.client.document.createOrReplace(
+              this.index,
+              this.collection,
+              this.options.document,
+              changeDoc,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          } else {
+            updateResp = await this.client.document.update(
+              this.index,
+              this.collection,
+              this.options.document,
+              changeDoc,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          }
           const serverDoc = (await this.client.document.get(
             this.index,
             this.collection,
