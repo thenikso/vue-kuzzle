@@ -145,7 +145,9 @@ export default class SmartQuery extends SmartKuzzle {
     this.loading = false;
 
     if (!error) {
-      this.changeRun = this.firstRun;
+      if (!this.changeRun) {
+        this.changeRun = this.firstRun;
+      }
       this.firstRunResolve(data);
     } else {
       this.firstRunReject(error);
@@ -269,7 +271,7 @@ export default class SmartQuery extends SmartKuzzle {
         }
       },
     ));
-    return this.changeRun;
+    return thisChangeRun.then(() => this.getData());
   }
 
   _initData() {
