@@ -973,7 +973,10 @@
         this.loading = false;
 
         if (!error) {
-          this.changeRun = this.firstRun;
+          if (!this.changeRun) {
+            this.changeRun = this.firstRun;
+          }
+
           this.firstRunResolve(data);
         } else {
           this.firstRunReject(error);
@@ -1188,7 +1191,9 @@
             return _ref.apply(this, arguments);
           };
         }());
-        return this.changeRun;
+        return thisChangeRun.then(function () {
+          return _this3.getData();
+        });
       }
     }, {
       key: "_initData",
@@ -1199,7 +1204,7 @@
           if (this._hasDataField) {
             Object.defineProperty(this.vm.$data.$kuzzleData.data, this.key, {
               get: function get() {
-                return _this4.vm.$data[key];
+                return _this4.vm.$data[_this4.key];
               },
               set: function set(value) {
                 return _this4.change(value);
@@ -1210,7 +1215,7 @@
           } else {
             Object.defineProperty(this.vm.$data, this.key, {
               get: function get() {
-                return _this4.vm.$data.$kuzzleData.data[key];
+                return _this4.vm.$data.$kuzzleData.data[_this4.key];
               },
               set: function set(value) {
                 return _this4.change(value);
