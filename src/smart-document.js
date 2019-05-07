@@ -177,6 +177,10 @@ export default class SmartQuery extends SmartKuzzle {
     if (!this.changeRun) {
       this.changeRun = Promise.resolve(null);
     }
+    if (typeof this.options.document === 'function') {
+      const cb = this.options.document.bind(this.vm);
+      this.options.document = cb();
+    }
     const thisChangeRun = (this.changeRun = this.changeRun.then(
       async savedDoc => {
         const isUpdate =

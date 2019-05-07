@@ -16,8 +16,6 @@ export default class SmartKuzzle {
       });
     }
 
-    this._initOptions();
-
     this._hasDataField = this.vm.$data.hasOwnProperty(key);
     this._initData();
 
@@ -181,18 +179,6 @@ export default class SmartKuzzle {
 
   executeKuzzle() {
     this.starting = false;
-  }
-
-  _initOptions() {
-    if (typeof this.initialOptions.document === 'function') {
-      const cb = this.initialOptions.document.bind(this.vm);
-      this.options.document = cb();
-    }
-
-    if (typeof this.initialOptions.search === 'function') {
-      const cb = this.initialOptions.search.bind(this.vm);
-      this.options.search = cb();
-    }
   }
 
   _initData() {
