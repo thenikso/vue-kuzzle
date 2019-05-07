@@ -231,8 +231,6 @@
         });
       }
 
-      this._initOptions();
-
       this._hasDataField = this.vm.$data.hasOwnProperty(key);
 
       this._initData();
@@ -424,20 +422,6 @@
       key: "executeKuzzle",
       value: function executeKuzzle() {
         this.starting = false;
-      }
-    }, {
-      key: "_initOptions",
-      value: function _initOptions() {
-        if (typeof this.initialOptions.document === 'function') {
-          var cb = this.initialOptions.document.bind(this.vm);
-          this.options.document = cb();
-        }
-
-        if (typeof this.initialOptions.search === 'function') {
-          var _cb2 = this.initialOptions.search.bind(this.vm);
-
-          this.options.search = _cb2();
-        }
       }
     }, {
       key: "_initData",
@@ -1041,6 +1025,11 @@
 
         if (!this.changeRun) {
           this.changeRun = Promise.resolve(null);
+        }
+
+        if (typeof this.options.document === 'function') {
+          var cb = this.options.document.bind(this.vm);
+          this.options.document = cb();
         }
 
         var thisChangeRun = this.changeRun = this.changeRun.then(
