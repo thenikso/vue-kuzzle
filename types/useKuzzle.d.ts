@@ -16,6 +16,7 @@ import {
   WithKuzzleMetadata,
 } from './vue-kuzzle';
 import { KuzzleProvider } from './kuzzle-provider';
+import { Wrapper } from 'vue-function-api';
 
 export type UseKuzzleConfig = {
   provider?: KuzzleProvider;
@@ -69,4 +70,12 @@ export function useKuzzle(
   //   key: string,
   //   options: VueKuzzleDocumentOptions<V, R> | VueKuzzleSearchOptions<V, R>,
   // ): SmartDocument<V>;
+};
+
+export function fetchKuzzle<R = any>(
+  options: VueKuzzleDocumentOptions,
+): {
+  loading: Wrapper<boolean>;
+  data: Wrapper<R>;
+  error: Wrapper<Error>;
 };

@@ -1,8 +1,10 @@
-import { inject } from 'vue-function-api';
+import { inject, value, computed, watch } from 'vue-function-api';
 
 export const kuzzleProvider = new Symbol('kuzzleProvider');
 
 export function useKuzzle(config) {
+  // TODO avoid to recreate all funcitons at every `useKuzzle` call
+
   const provider =
     (config && config.provider) ||
     inject(kuzzleProvider) ||
@@ -215,5 +217,64 @@ export function useKuzzle(config) {
     create,
     change,
     delete: deleteDoc,
+  };
+}
+
+export function fetchKuzzle(options) {
+  if (!options || !options.document) {
+    throw new Error('[fetchKuzzle] Missing `document` options');
+  }
+
+  const loading = value(false);
+  const data = value(null);
+  const error = value(null);
+  const kuzzle = useKuzzle(options);
+
+  const documentId =
+    typeof options.document === 'function'
+      ? computed(options.document)
+      : value(options.document);
+  const skip =
+    typeof options.skip === 'function'
+      ? computed(options.skip)
+      : value(options.skip);
+
+  watch(
+    () => {
+      if (skip.value) {
+        return null;
+      }
+      return documentId.value;
+    },
+    async id => {
+      if (!id) {
+        return;
+      }
+      loading.value = true;
+      try {
+        const { _kuzzle_response, ...dataValue } = await kuzzle.get(documentId);
+        loading.value = false;
+        if (options.update) {
+          data.value = option.update(dataValue, _kuzzle_response);
+        } else {
+          data.value = dataValue;
+        }
+      } catch (err) {
+        error.value = err;
+        loading.value = false;
+        if (typeof options.error === 'function') {
+          options.error(err);
+        }
+      }
+    },
+    {
+      lazy: false,
+    },
+  );
+
+  return {
+    loading,
+    data,
+    error,
   };
 }
