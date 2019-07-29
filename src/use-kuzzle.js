@@ -88,9 +88,132 @@ export function useKuzzle(config) {
     }
   };
 
+  const get = async (id, options) => {
+    const { index, collection } = this.getIndexAndCollection(
+      options,
+      'getDocument',
+    );
+    const response = await this.getClient(options).document.get(
+      index,
+      collection,
+      id,
+    );
+    return {
+      ...response._source,
+      _kuzzle_response: response,
+    };
+  };
+
+  const search = async (query, options) => {
+    const { index, collection } = getIndexAndCollection(
+      options,
+      'searchDocuments',
+    );
+    const _kuzzle_response = await getClient(options).document.search(
+      index,
+      collection,
+      {
+        query,
+        aggregations: options && options.aggregations,
+        sort: options && options.sort,
+      },
+      {
+        from: (options && options.from) || 0,
+        size: (options && options.size) || 10,
+      },
+    );
+    const hits = (_kuzzle_response.hits || []).slice();
+    hits._kuzzle_response = _kuzzle_response;
+    return hits;
+  };
+
+  const create = async (doc, options) => {
+    const { index, collection } = getIndexAndCollection(
+      options,
+      'createDocument',
+    );
+    let _kuzzle_response;
+    if (options && options.replace === true) {
+      if (!options.id) {
+        throw new Error(
+          "[vue-kuzzle] Missing 'id' in 'createDocument' called with 'replace: true'",
+        );
+      }
+      _kuzzle_response = await getClient(options).document.createOrReplace(
+        index,
+        collection,
+        options && options.id,
+        doc,
+        {
+          refresh: 'wait_for',
+        },
+      );
+    }
+    _kuzzle_response = await getClient(options).document.create(
+      index,
+      collection,
+      doc,
+      options && options.id,
+      {
+        refresh: 'wait_for',
+      },
+    );
+    return {
+      ..._kuzzle_response._source,
+      _kuzzle_response,
+    };
+  };
+
+  const change = async (id, doc, options) => {
+    const { index, collection } = getIndexAndCollection(
+      options,
+      'changeDocument',
+    );
+    let _kuzzle_response;
+    if (options && options.replace === true) {
+      _kuzzle_response = await getClient(options).document.replace(
+        index,
+        collection,
+        id,
+        doc,
+        {
+          refresh: 'wait_for',
+        },
+      );
+    }
+    _kuzzle_response = await getClient(options).document.update(
+      index,
+      collection,
+      id,
+      doc,
+      {
+        refresh: 'wait_for',
+      },
+    );
+    return {
+      ..._kuzzle_response._source,
+      _kuzzle_response,
+    };
+  };
+
+  const deleteDoc = (id, options) => {
+    const { index, collection } = getIndexAndCollection(
+      options,
+      'deleteDocument',
+    );
+    return getClient(options).document.delete(index, collection, id, {
+      refresh: 'wait_for',
+    });
+  };
+
   return {
     provider,
     getClient,
     query,
+    get,
+    search,
+    create,
+    change,
+    delete: deleteDoc,
   };
 }

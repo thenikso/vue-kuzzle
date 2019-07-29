@@ -1,5 +1,20 @@
-import { Kuzzle, QueryResponse } from 'kuzzle-sdk';
-import { DollarKuzzleQueryOptions } from './vue-kuzzle';
+import {
+  Kuzzle,
+  QueryResponse,
+  KuzzleMetadata,
+  KuzzleDocumentGetResponse,
+  KuzzleDocumentSearchResponse,
+  KuzzleDocumentCreateReplaceResponse,
+} from 'kuzzle-sdk';
+import {
+  DollarKuzzleOptions,
+  DollarKuzzleQueryOptions,
+  DollarKuzzleSearchOptions,
+  DollarKuzzleCreateOptions,
+  DollarKuzzleChangeOptions,
+  WithKuzzleResponse,
+  WithKuzzleMetadata,
+} from './vue-kuzzle';
 import { KuzzleProvider } from './kuzzle-provider';
 
 export type UseKuzzleConfig = {
@@ -18,38 +33,38 @@ export function useKuzzle(
     body: object,
     options: DollarKuzzleQueryOptions,
   ): Promise<QueryResponse<R>>;
-  // get<R = any>(
-  //   id: string,
-  //   options?: DollarKuzzleOptions,
-  // ): Promise<
-  //   WithKuzzleResponse<WithKuzzleMetadata<R>, KuzzleDocumentGetResponse<R>>
-  // >;
-  // search<R = any>(
-  //   query: object,
-  //   options?: DollarKuzzleSearchOptions,
-  // ): Promise<
-  //   WithKuzzleResponse<WithKuzzleMetadata<R>[], KuzzleDocumentSearchResponse<R>>
-  // >;
-  // create<R = any>(
-  //   doc: R,
-  //   options?: DollarKuzzleCreateOptions,
-  // ): Promise<
-  //   WithKuzzleResponse<
-  //     WithKuzzleMetadata<R>,
-  //     KuzzleDocumentCreateReplaceResponse<R>
-  //   >
-  // >;
-  // change<R = any>(
-  //   id: string,
-  //   doc: object,
-  //   options?: DollarKuzzleChangeOptions,
-  // ): Promise<
-  //   WithKuzzleResponse<
-  //     WithKuzzleMetadata<R>,
-  //     KuzzleDocumentCreateReplaceResponse<R>
-  //   >
-  // >;
-  // delete(id: string, options?: DollarKuzzleOptions): Promise<void>;
+  get<R = any>(
+    id: string,
+    options?: DollarKuzzleOptions,
+  ): Promise<
+    WithKuzzleResponse<WithKuzzleMetadata<R>, KuzzleDocumentGetResponse<R>>
+  >;
+  search<R = any>(
+    query: object,
+    options?: DollarKuzzleSearchOptions,
+  ): Promise<
+    WithKuzzleResponse<WithKuzzleMetadata<R>[], KuzzleDocumentSearchResponse<R>>
+  >;
+  create<R = any>(
+    doc: R,
+    options?: DollarKuzzleCreateOptions,
+  ): Promise<
+    WithKuzzleResponse<
+      WithKuzzleMetadata<R>,
+      KuzzleDocumentCreateReplaceResponse<R>
+    >
+  >;
+  change<R = any>(
+    id: string,
+    doc: object,
+    options?: DollarKuzzleChangeOptions,
+  ): Promise<
+    WithKuzzleResponse<
+      WithKuzzleMetadata<R>,
+      KuzzleDocumentCreateReplaceResponse<R>
+    >
+  >;
+  delete(id: string, options?: DollarKuzzleOptions): Promise<void>;
   // addSmartDocumentOrSearch<R = any>(
   //   key: string,
   //   options: VueKuzzleDocumentOptions<V, R> | VueKuzzleSearchOptions<V, R>,
