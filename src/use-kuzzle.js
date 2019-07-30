@@ -1,19 +1,14 @@
 import { inject, value, computed, watch } from 'vue-function-api';
 
-export const kuzzleProvider = new Symbol('kuzzleProvider');
-
-const useKuzzleCache = {};
+const useKuzzleCache = new Map();
 
 export function useKuzzle(config) {
-  const cacheKey = !config ? 'default' : JSON.stringify(config);
-  if (useKuzzleCache[cacheKey]) {
-    return useKuzzleCache[cacheKey];
+  let cacheProviderKey = (config && config.provider) || 'default';
+  if (useKuzzleCache.has(cacheProviderKey)) {
+    return useKuzzleCache.get(cacheProviderKey);
   }
 
-  const provider =
-    (config && config.provider) ||
-    inject(kuzzleProvider) ||
-    inject('kuzzleProvider');
+  const provider = (config && config.provider) || inject('kuzzleProvider');
   if (!provider) {
     throw new Error(
       `[useKuzzle] Missing 'kuzzleProvider' to be provided via 'provide'`,
@@ -224,20 +219,20 @@ export function useKuzzle(config) {
     delete: deleteDoc,
   };
 
-  useKuzzleCache[cacheKey] = kuzzle;
+  useKuzzleCache.set(cacheProviderKey, kuzzle);
 
   return kuzzle;
 }
 
 export function fetchKuzzle(options) {
   if (!options || !options.document) {
-    throw new Error('[fetchKuzzle] Missing `document` options');
+    throw new Error('[fetchKuzzle] Missing `document` in options');
   }
 
+  const kuzzle = useKuzzle(options);
   const loading = value(false);
   const data = value(null);
   const error = value(null);
-  const kuzzle = useKuzzle(options);
 
   const documentId =
     typeof options.document === 'function'
@@ -260,11 +255,12 @@ export function fetchKuzzle(options) {
         return;
       }
       loading.value = true;
+      await kuzzle.provider.connectAll();
       try {
         const { _kuzzle_response, ...dataValue } = await kuzzle.get(documentId);
         loading.value = false;
         if (options.update) {
-          data.value = option.update(dataValue, _kuzzle_response);
+          data.value = options.update(dataValue, _kuzzle_response);
         } else {
           data.value = dataValue;
         }
@@ -282,8 +278,118 @@ export function fetchKuzzle(options) {
   );
 
   return {
+    kuzzle,
     loading,
     data,
     error,
+  };
+}
+
+export function searchKuzzle(options) {
+  if (!options || !options.search) {
+    throw new Error('[searchKuzzle] Missing `search` in options');
+  }
+
+  const kuzzle = useKuzzle(options);
+  const loading = value(false);
+  const data = value(null);
+  const error = value(null);
+  const response = value(null);
+
+  const searchQuery =
+    typeof options.search === 'function'
+      ? computed(options.search)
+      : value(options.search);
+  const skip =
+    typeof options.skip === 'function'
+      ? computed(options.skip)
+      : value(options.skip);
+
+  const setData = (dataValue, resp) => {
+    response.value = resp;
+    if (options.update) {
+      data.value = options.update(dataValue, resp);
+    } else {
+      data.value = dataValue;
+    }
+  };
+
+  const setError = err => {
+    error.value = err;
+    loading.value = false;
+    if (typeof options.error === 'function') {
+      options.error(err);
+    } else {
+      console.error(err);
+    }
+  };
+
+  watch(
+    () => {
+      if (skip.value) {
+        return null;
+      }
+      return searchQuery.value;
+    },
+    async search => {
+      if (!search) {
+        return;
+      }
+      loading.value = true;
+      await kuzzle.provider.connectAll();
+      try {
+        const resp = await kuzzle.search(
+          search.query || search,
+          search.query
+            ? {
+                ...options,
+                aggregations: search.aggregations,
+                sort: search.sort,
+                from: search.from,
+                size: search.size,
+              }
+            : {},
+        );
+        loading.value = false;
+        setData(resp, resp._kuzzle_response);
+      } catch (err) {
+        setError(err);
+      }
+    },
+    {
+      lazy: false,
+    },
+  );
+
+  const hasMore = computed(() => {
+    return response.value
+      ? response.value.fetched < response.value.total
+      : false;
+  });
+
+  const fetchMore = async () => {
+    if (!response.value) {
+      return;
+    }
+
+    loading.value = true;
+    try {
+      const moreResponse = await response.value.next();
+      const fetchMoreData = moreResponse.hits.map(({ _source }) => _source);
+      if (fetchMoreData.length > 0) {
+        setData([...data.value, ...fetchMoreData], response.value);
+      }
+    } catch (err) {
+      setError(err);
+    }
+  };
+
+  return {
+    kuzzle,
+    loading,
+    data,
+    error,
+    hasMore,
+    fetchMore,
   };
 }

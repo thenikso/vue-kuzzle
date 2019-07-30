@@ -17,7 +17,7 @@ import {
 } from './vue-kuzzle';
 import { KuzzleProvider } from './kuzzle-provider';
 import { Wrapper } from 'vue-function-api';
-import { VueKuzzleDocumentOptions } from './options';
+import { VueKuzzleDocumentOptions, VueKuzzleSearchOptions } from './options';
 
 export type UseKuzzleConfig = {
   provider?: KuzzleProvider;
@@ -79,4 +79,14 @@ export function fetchKuzzle<R = any>(
   loading: Wrapper<boolean>;
   data: Wrapper<R>;
   error: Wrapper<Error>;
+};
+
+export function searchKuzzle<R = any>(
+  options: VueKuzzleSearchOptions<any, R>,
+): {
+  loading: Wrapper<boolean>;
+  data: Wrapper<R[]>;
+  error: Wrapper<Error>;
+  hasMore: Wrapper<boolean>;
+  fetchMore: () => void;
 };

@@ -7,7 +7,7 @@ import { KuzzleProvider as plugin } from './kuzzle-provider';
 
 import { installMixin } from './mixin';
 
-export { useKuzzle } from './use-kuzzle';
+export * from './use-kuzzle';
 
 export function install(Vue, options) {
   if (install.installed) return;
