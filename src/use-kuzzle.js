@@ -91,11 +91,8 @@ export function useKuzzle(config) {
   };
 
   const get = async (id, options) => {
-    const { index, collection } = this.getIndexAndCollection(
-      options,
-      'getDocument',
-    );
-    const response = await this.getClient(options).document.get(
+    const { index, collection } = getIndexAndCollection(options, 'getDocument');
+    const response = await getClient(options).document.get(
       index,
       collection,
       id,
@@ -257,7 +254,10 @@ export function fetchKuzzle(options) {
       loading.value = true;
       await kuzzle.provider.connectAll();
       try {
-        const { _kuzzle_response, ...dataValue } = await kuzzle.get(documentId);
+        const { _kuzzle_response, ...dataValue } = await kuzzle.get(
+          id,
+          options,
+        );
         loading.value = false;
         if (options.update) {
           data.value = options.update(dataValue, _kuzzle_response);
