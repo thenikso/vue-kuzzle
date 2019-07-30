@@ -2,8 +2,13 @@ import { inject, value, computed, watch } from 'vue-function-api';
 
 export const kuzzleProvider = new Symbol('kuzzleProvider');
 
+const useKuzzleCache = {};
+
 export function useKuzzle(config) {
-  // TODO avoid to recreate all funcitons at every `useKuzzle` call
+  const cacheKey = !config ? 'default' : JSON.stringify(config);
+  if (useKuzzleCache[cacheKey]) {
+    return useKuzzleCache[cacheKey];
+  }
 
   const provider =
     (config && config.provider) ||
@@ -208,7 +213,7 @@ export function useKuzzle(config) {
     });
   };
 
-  return {
+  const kuzzle = {
     provider,
     getClient,
     query,
@@ -218,6 +223,10 @@ export function useKuzzle(config) {
     change,
     delete: deleteDoc,
   };
+
+  useKuzzleCache[cacheKey] = kuzzle;
+
+  return kuzzle;
 }
 
 export function fetchKuzzle(options) {

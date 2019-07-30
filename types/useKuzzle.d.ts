@@ -17,6 +17,7 @@ import {
 } from './vue-kuzzle';
 import { KuzzleProvider } from './kuzzle-provider';
 import { Wrapper } from 'vue-function-api';
+import { VueKuzzleDocumentOptions } from './options';
 
 export type UseKuzzleConfig = {
   provider?: KuzzleProvider;
@@ -73,7 +74,7 @@ export function useKuzzle(
 };
 
 export function fetchKuzzle<R = any>(
-  options: VueKuzzleDocumentOptions,
+  options: VueKuzzleDocumentOptions<any, R>,
 ): {
   loading: Wrapper<boolean>;
   data: Wrapper<R>;
