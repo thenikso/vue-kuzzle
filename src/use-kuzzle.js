@@ -230,7 +230,7 @@ export function fetchKuzzle(options) {
   }
 
   const kuzzle = useKuzzle(options);
-  const loading = value(false);
+  const isLoading = value(false);
   const data = value(null);
   const error = value(null);
 
@@ -254,14 +254,14 @@ export function fetchKuzzle(options) {
       if (!id) {
         return;
       }
-      loading.value = true;
+      isLoading.value = true;
       await kuzzle.provider.connectAll();
       try {
         const { _kuzzle_response, ...dataValue } = await kuzzle.get(
           id,
           options,
         );
-        loading.value = false;
+        isLoading.value = false;
         if (options.update) {
           data.value = options.update(dataValue, _kuzzle_response);
         } else {
@@ -269,7 +269,7 @@ export function fetchKuzzle(options) {
         }
       } catch (err) {
         error.value = err;
-        loading.value = false;
+        isLoading.value = false;
         if (typeof options.error === 'function') {
           options.error(err);
         }
@@ -282,7 +282,7 @@ export function fetchKuzzle(options) {
 
   return {
     kuzzle,
-    loading,
+    isLoading,
     data,
     error,
   };
@@ -294,7 +294,7 @@ export function searchKuzzle(options) {
   }
 
   const kuzzle = useKuzzle(options);
-  const loading = value(false);
+  const isLoading = value(false);
   const data = value(null);
   const error = value(null);
   const response = value(null);
@@ -319,7 +319,7 @@ export function searchKuzzle(options) {
 
   const setError = err => {
     error.value = err;
-    loading.value = false;
+    isLoading.value = false;
     if (typeof options.error === 'function') {
       options.error(err);
     } else {
@@ -338,7 +338,7 @@ export function searchKuzzle(options) {
       if (!search) {
         return;
       }
-      loading.value = true;
+      isLoading.value = true;
       await kuzzle.provider.connectAll();
       try {
         const resp = await kuzzle.search(
@@ -353,7 +353,7 @@ export function searchKuzzle(options) {
               }
             : {},
         );
-        loading.value = false;
+        isLoading.value = false;
         setData(resp, resp._kuzzle_response);
       } catch (err) {
         setError(err);
@@ -375,7 +375,7 @@ export function searchKuzzle(options) {
       return;
     }
 
-    loading.value = true;
+    isLoading.value = true;
     try {
       const moreResponse = await response.value.next();
       const fetchMoreData = moreResponse.hits.map(({ _source }) => _source);
@@ -389,7 +389,7 @@ export function searchKuzzle(options) {
 
   return {
     kuzzle,
-    loading,
+    isLoading,
     data,
     error,
     hasMore,

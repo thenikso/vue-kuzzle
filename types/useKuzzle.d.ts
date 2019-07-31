@@ -26,9 +26,7 @@ export type UseKuzzleConfig = {
   collection?: string;
 };
 
-export function useKuzzle(
-  config?: UseKuzzleConfig,
-): {
+interface UseKuzzle {
   provider: KuzzleProvider;
   getClient(options?: { client?: string | Kuzzle }): Kuzzle;
   query<R = any>(
@@ -71,12 +69,15 @@ export function useKuzzle(
   //   key: string,
   //   options: VueKuzzleDocumentOptions<V, R> | VueKuzzleSearchOptions<V, R>,
   // ): SmartDocument<V>;
-};
+}
+
+export function useKuzzle(config?: UseKuzzleConfig): UseKuzzle;
 
 export function fetchKuzzle<R = any>(
   options: VueKuzzleDocumentOptions<any, R>,
 ): {
-  loading: Wrapper<boolean>;
+  kuzzle: UseKuzzle;
+  isLoading: Wrapper<boolean>;
   data: Wrapper<R>;
   error: Wrapper<Error>;
 };
@@ -84,7 +85,8 @@ export function fetchKuzzle<R = any>(
 export function searchKuzzle<R = any>(
   options: VueKuzzleSearchOptions<any, R>,
 ): {
-  loading: Wrapper<boolean>;
+  kuzzle: UseKuzzle;
+  isLoading: Wrapper<boolean>;
   data: Wrapper<R[]>;
   error: Wrapper<Error>;
   hasMore: Wrapper<boolean>;
