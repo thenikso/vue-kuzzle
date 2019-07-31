@@ -1,23 +1,29 @@
 import { inject, value, computed, watch } from 'vue-function-api';
 
-const useKuzzleCache = new Map();
-
 export function useKuzzle(config) {
-  let cacheProviderKey = (config && config.provider) || 'default';
-  if (useKuzzleCache.has(cacheProviderKey)) {
-    return useKuzzleCache.get(cacheProviderKey);
+  const configProvider = config && config.provider;
+  const cached = getFromCache(configProvider, config);
+  if (cached) {
+    return cached;
   }
 
-  const provider = (config && config.provider) || inject('kuzzleProvider');
+  const provider = configProvider || inject('kuzzleProvider');
   if (!provider) {
     throw new Error(
       `[useKuzzle] Missing 'kuzzleProvider' to be provided via 'provide'`,
     );
   }
 
-  const defaultIndex = (config && config.index) || provider.defaultIndex;
-  const defaultCollection =
-    (config && config.collection) || provider.defaultCollection;
+  if (configProvider) {
+    const defaultCached = getFromCache(provider, config);
+    if (defaultCached) {
+      setToCache(null, config, defaultCached);
+      return defaultCached;
+    }
+  }
+
+  const defaultIndex = provider.defaultIndex;
+  const defaultCollection = provider.defaultCollection;
 
   const getClient = options => {
     if (options && options.client) {
@@ -42,9 +48,6 @@ export function useKuzzle(config) {
     }
     if (!config || !config.client) {
       return provider.defaultClient;
-    }
-    if (typeof config.client === 'object') {
-      return config.client;
     }
     const client = provider.clients[config.client];
     if (!client) {
@@ -216,7 +219,7 @@ export function useKuzzle(config) {
     delete: deleteDoc,
   };
 
-  useKuzzleCache.set(cacheProviderKey, kuzzle);
+  setToCache(configProvider, config, kuzzle);
 
   return kuzzle;
 }
@@ -392,4 +395,44 @@ export function searchKuzzle(options) {
     hasMore,
     fetchMore,
   };
+}
+
+//
+// useKuzzle cache
+//
+
+const useKuzzleCache = new Map();
+
+const getProviderKey = provider => {
+  return provider || 'default';
+};
+
+const getConfigKey = config => {
+  let configKey = null;
+  if (config) {
+    configKey = config.client || 'default';
+  }
+  return configKey || 'default';
+};
+
+function getFromCache(provider, config) {
+  const providerKey = getProviderKey(provider);
+  const cacheHit = useKuzzleCache.get(providerKey);
+  if (!cacheHit) {
+    return null;
+  }
+  const configKey = getConfigKey(config);
+  return cacheHit[configKey];
+}
+
+function setToCache(provider, config, kuzzle) {
+  const providerKey = getProviderKey(provider);
+  const cacheHit = useKuzzleCache.get(providerKey);
+  const configKey = getConfigKey(config);
+  let newCacheHit = cacheHit;
+  if (!newCacheHit) {
+    newCacheHit = {};
+  }
+  newCacheHit[configKey] = kuzzle;
+  useKuzzleCache.set(providerKey, newCacheHit);
 }
