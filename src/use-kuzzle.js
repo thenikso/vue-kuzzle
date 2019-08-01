@@ -232,8 +232,9 @@ export function fetchKuzzle(options) {
   }
 
   const kuzzle = useKuzzle(options);
-  const isLoading = value(false);
-  const data = value(null);
+  const isFetching = value(false);
+  const isChanging = value(false);
+  const rawData = value(null);
   const error = value(null);
 
   const documentId =
@@ -247,7 +248,8 @@ export function fetchKuzzle(options) {
 
   const setError = err => {
     error.value = err;
-    isLoading.value = false;
+    isFetching.value = false;
+    isChanging.value = false;
     if (typeof options.error === 'function') {
       options.error(err);
     } else {
@@ -255,7 +257,7 @@ export function fetchKuzzle(options) {
     }
   };
 
-  let changeRun;
+  let changePromise;
 
   watch(
     () => {
@@ -268,21 +270,21 @@ export function fetchKuzzle(options) {
       if (!id) {
         return;
       }
-      isLoading.value = true;
+      isFetching.value = true;
       await kuzzle.provider.connectAll();
       try {
         const { _kuzzle_response, ...dataValue } = await kuzzle.get(
           id,
           options,
         );
-        isLoading.value = false;
+        isFetching.value = false;
         if (options.update) {
-          data.value = options.update(dataValue, _kuzzle_response);
+          rawData.value = options.update(dataValue, _kuzzle_response);
         } else {
-          data.value = dataValue;
+          rawData.value = dataValue;
         }
-        if (!changeRun) {
-          changeRun = Promise.resolve(data.value);
+        if (!changePromise) {
+          changePromise = Promise.resolve(rawData.value);
         }
       } catch (err) {
         setError(err);
@@ -294,111 +296,122 @@ export function fetchKuzzle(options) {
   );
 
   const change = async newDoc => {
-    isLoading.value = true;
-    if (!changeRun) {
-      changeRun = Promise.resolve(null);
+    isChanging.value = true;
+    if (!changePromise) {
+      changePromise = Promise.resolve(null);
     }
-    const currentChangeRun = (changeRun = changeRun.then(async savedDoc => {
-      const isUpdate =
-        savedDoc &&
-        Object.keys(savedDoc).every(
-          key => key === '_kuzzle_info' || newDoc.hasOwnProperty(key),
-        );
-      // Prepare changeDoc
-      let changeDoc = isUpdate ? getRootChanges(savedDoc, newDoc) : newDoc;
-      const { index, collection } = kuzzle.getIndexAndCollection(
-        options,
-        'change',
-      );
-      const changeContext = {
-        index,
-        collection,
-        id: documentId.value,
-        savedDocument: savedDoc,
-        changedDocument: newDoc,
-        // key missing
-      };
-      const changeFilter = options.changeFilter || kuzzle.provider.changeFilter;
-      if (typeof changeFilter === 'function') {
-        try {
-          changeDoc = await Promise.resolve(
-            changeFilter(changeDoc, changeContext),
+    const currentChangeRun = (changePromise = changePromise.then(
+      async savedDoc => {
+        const isUpdate =
+          savedDoc &&
+          Object.keys(savedDoc).every(
+            key => key === '_kuzzle_info' || newDoc.hasOwnProperty(key),
           );
+        // Prepare changeDoc
+        let changeDoc = isUpdate ? getRootChanges(savedDoc, newDoc) : newDoc;
+        const { index, collection } = kuzzle.getIndexAndCollection(
+          options,
+          'change',
+        );
+        const changeContext = {
+          index,
+          collection,
+          id: documentId.value,
+          savedDocument: savedDoc,
+          changedDocument: newDoc,
+          // key missing
+        };
+        const changeFilter =
+          options.changeFilter || kuzzle.provider.changeFilter;
+        if (typeof changeFilter === 'function') {
+          try {
+            changeDoc = await Promise.resolve(
+              changeFilter(changeDoc, changeContext),
+            );
+          } catch (err) {
+            setError(err);
+            return savedDoc;
+          }
+        }
+        // No changes to be applied
+        if (!changeDoc || Object.keys(changeDoc).length === 0) {
+          isChanging.value = false;
+          return savedDoc;
+        }
+        // Attempt change
+        const client = kuzzle.getClient(options);
+        try {
+          let updateResp;
+          if (!documentId.value) {
+            updateResp = await client.document.create(
+              index,
+              collection,
+              changeDoc,
+              null,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          } else if (!isUpdate) {
+            updateResp = await client.document.createOrReplace(
+              index,
+              collection,
+              ocumentId.value,
+              changeDoc,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          } else {
+            updateResp = await client.document.update(
+              index,
+              collection,
+              ocumentId.value,
+              changeDoc,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          }
+          const serverDoc = (await client.document.get(
+            index,
+            collection,
+            updateResp._id,
+          ))._source;
+          let returnDoc = serverDoc;
+          if (typeof options.update === 'function') {
+            returnDoc = await Promise.resolve(
+              options.update(
+                serverDoc,
+                updateResp,
+                updateResp.created ? 'created' : updateResp.result,
+              ),
+            );
+          }
+          if (changePromise === currentChangeRun) {
+            rawData.value = returnDoc;
+          }
+          isChanging.value = false;
+          return returnDoc;
         } catch (err) {
           setError(err);
           return savedDoc;
         }
-      }
-      // No changes to be applied
-      if (!changeDoc || Object.keys(changeDoc).length === 0) {
-        isLoading.value = false;
-        return savedDoc;
-      }
-      // Attempt change
-      const client = kuzzle.getClient(options);
-      try {
-        let updateResp;
-        if (!documentId.value) {
-          updateResp = await client.document.create(
-            index,
-            collection,
-            changeDoc,
-            null,
-            {
-              refresh: 'wait_for',
-            },
-          );
-        } else if (!isUpdate) {
-          updateResp = await client.document.createOrReplace(
-            index,
-            collection,
-            ocumentId.value,
-            changeDoc,
-            {
-              refresh: 'wait_for',
-            },
-          );
-        } else {
-          updateResp = await client.document.update(
-            index,
-            collection,
-            ocumentId.value,
-            changeDoc,
-            {
-              refresh: 'wait_for',
-            },
-          );
-        }
-        const serverDoc = (await client.document.get(
-          index,
-          collection,
-          updateResp._id,
-        ))._source;
-        let returnDoc = serverDoc;
-        if (typeof options.update === 'function') {
-          returnDoc = await Promise.resolve(
-            options.update(
-              serverDoc,
-              updateResp,
-              updateResp.created ? 'created' : updateResp.result,
-            ),
-          );
-        }
-        if (changeRun === currentChangeRun) {
-          data.value = returnDoc;
-        }
-        isLoading.value = false;
-        return returnDoc;
-      } catch (err) {
-        setError(err);
-        return savedDoc;
-      }
-    }));
-    return currentChangeRun.then(() => data.value);
+      },
+    ));
+    return currentChangeRun.then(() => rawData.value);
   };
+
+  const isLoading = computed(() => {
+    return isFetching.value || isChanging.value;
+  });
+
+  const data = computed(() => rawData.value, change);
 
   return {
     kuzzle,
+    isFetching,
+    isChanging,
     isLoading,
     data,
     error,
