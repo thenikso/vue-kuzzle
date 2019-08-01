@@ -80,6 +80,7 @@ export function fetchKuzzle<R = any>(
   isLoading: Wrapper<boolean>;
   data: Wrapper<R>;
   error: Wrapper<Error>;
+  change: (newDoc: R) => Promise<R>;
 };
 
 export function searchKuzzle<R = any>(
