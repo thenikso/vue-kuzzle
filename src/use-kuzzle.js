@@ -314,6 +314,7 @@ export function fetchKuzzle(options) {
           'change',
         );
         const changeContext = {
+          kuzzle,
           index,
           collection,
           id: documentId.value,
@@ -356,7 +357,7 @@ export function fetchKuzzle(options) {
             updateResp = await client.document.createOrReplace(
               index,
               collection,
-              ocumentId.value,
+              documentId.value,
               changeDoc,
               {
                 refresh: 'wait_for',
@@ -366,7 +367,7 @@ export function fetchKuzzle(options) {
             updateResp = await client.document.update(
               index,
               collection,
-              ocumentId.value,
+              documentId.value,
               changeDoc,
               {
                 refresh: 'wait_for',
