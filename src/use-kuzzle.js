@@ -232,8 +232,8 @@ export function fetchKuzzle(options) {
   }
 
   const kuzzle = useKuzzle(options);
-  const isFetching = value(false);
-  const isChanging = value(false);
+  const isReading = value(false);
+  const isWriting = value(false);
   const rawData = value(null);
   const error = value(null);
 
@@ -248,8 +248,8 @@ export function fetchKuzzle(options) {
 
   const setError = err => {
     error.value = err;
-    isFetching.value = false;
-    isChanging.value = false;
+    isReading.value = false;
+    isWriting.value = false;
     if (typeof options.error === 'function') {
       options.error(err);
     } else {
@@ -270,14 +270,14 @@ export function fetchKuzzle(options) {
       if (!id) {
         return;
       }
-      isFetching.value = true;
+      isReading.value = true;
       await kuzzle.provider.connectAll();
       try {
         const { _kuzzle_response, ...dataValue } = await kuzzle.get(
           id,
           options,
         );
-        isFetching.value = false;
+        isReading.value = false;
         if (options.update) {
           rawData.value = options.update(dataValue, _kuzzle_response);
         } else {
@@ -296,7 +296,7 @@ export function fetchKuzzle(options) {
   );
 
   const change = async newDoc => {
-    isChanging.value = true;
+    isWriting.value = true;
     if (!changePromise) {
       changePromise = Promise.resolve(null);
     }
@@ -335,7 +335,7 @@ export function fetchKuzzle(options) {
         }
         // No changes to be applied
         if (!changeDoc || Object.keys(changeDoc).length === 0) {
-          isChanging.value = false;
+          isWriting.value = false;
           return savedDoc;
         }
         // Attempt change
@@ -391,7 +391,7 @@ export function fetchKuzzle(options) {
           if (changePromise === currentChangeRun) {
             rawData.value = returnDoc;
           }
-          isChanging.value = false;
+          isWriting.value = false;
           return returnDoc;
         } catch (err) {
           setError(err);
@@ -403,15 +403,15 @@ export function fetchKuzzle(options) {
   };
 
   const isLoading = computed(() => {
-    return isFetching.value || isChanging.value;
+    return isReading.value || isWriting.value;
   });
 
   const data = computed(() => rawData.value, change);
 
   return {
     kuzzle,
-    isFetching,
-    isChanging,
+    isReading,
+    isWriting,
     isLoading,
     data,
     error,

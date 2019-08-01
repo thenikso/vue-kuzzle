@@ -77,8 +77,8 @@ export function fetchKuzzle<R = any>(
   options: VueKuzzleDocumentOptions<any, R>,
 ): {
   kuzzle: UseKuzzle;
-  isFetching: Wrapper<boolean>;
-  isChanging: Wrapper<boolean>;
+  isReading: Wrapper<boolean>;
+  isWriting: Wrapper<boolean>;
   isLoading: Wrapper<boolean>;
   data: Wrapper<R>;
   error: Wrapper<Error>;
