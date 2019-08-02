@@ -483,7 +483,7 @@ export function searchKuzzle(options) {
                 from: search.from,
                 size: search.size,
               }
-            : {},
+            : options,
         );
         isLoading.value = false;
         setData(resp, resp._kuzzle_response);
