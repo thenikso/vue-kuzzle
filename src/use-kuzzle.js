@@ -459,6 +459,32 @@ export function searchKuzzle(options) {
     }
   };
 
+  const requestSearch = async search => {
+    if (!search) {
+      return;
+    }
+    isLoading.value = true;
+    await kuzzle.provider.connectAll();
+    try {
+      const resp = await kuzzle.search(
+        search.query || search,
+        search.query
+          ? {
+              ...options,
+              aggregations: search.aggregations,
+              sort: search.sort,
+              from: search.from,
+              size: search.size,
+            }
+          : options,
+      );
+      isLoading.value = false;
+      setData(resp, resp._kuzzle_response);
+    } catch (err) {
+      setError(err);
+    }
+  };
+
   watch(
     () => {
       if (skip.value) {
@@ -466,31 +492,7 @@ export function searchKuzzle(options) {
       }
       return searchQuery.value;
     },
-    async search => {
-      if (!search) {
-        return;
-      }
-      isLoading.value = true;
-      await kuzzle.provider.connectAll();
-      try {
-        const resp = await kuzzle.search(
-          search.query || search,
-          search.query
-            ? {
-                ...options,
-                aggregations: search.aggregations,
-                sort: search.sort,
-                from: search.from,
-                size: search.size,
-              }
-            : options,
-        );
-        isLoading.value = false;
-        setData(resp, resp._kuzzle_response);
-      } catch (err) {
-        setError(err);
-      }
-    },
+    requestSearch,
     {
       lazy: false,
     },
@@ -513,11 +515,14 @@ export function searchKuzzle(options) {
       const fetchMoreData = moreResponse.hits.map(({ _source }) => _source);
       if (fetchMoreData.length > 0) {
         setData([...data.value, ...fetchMoreData], response.value);
+        return fetchMoreData;
       }
     } catch (err) {
       setError(err);
     }
   };
+
+  const refresh = () => requestSearch(searchQuery.value);
 
   return {
     kuzzle,
@@ -526,6 +531,7 @@ export function searchKuzzle(options) {
     error,
     hasMore,
     fetchMore,
+    refresh,
   };
 }
 

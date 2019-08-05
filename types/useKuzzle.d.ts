@@ -74,7 +74,7 @@ interface UseKuzzle {
 export function useKuzzle(config?: UseKuzzleConfig): UseKuzzle;
 
 export function fetchKuzzle<R = any>(
-  options: VueKuzzleDocumentOptions<any, R>,
+  options: VueKuzzleDocumentOptions<never, R>,
 ): {
   kuzzle: UseKuzzle;
   isReading: Wrapper<boolean>;
@@ -86,12 +86,13 @@ export function fetchKuzzle<R = any>(
 };
 
 export function searchKuzzle<R = any>(
-  options: VueKuzzleSearchOptions<any, R>,
+  options: VueKuzzleSearchOptions<never, R>,
 ): {
   kuzzle: UseKuzzle;
   isLoading: Wrapper<boolean>;
   data: Wrapper<R[]>;
   error: Wrapper<Error>;
   hasMore: Wrapper<boolean>;
-  fetchMore: () => void;
+  fetchMore: () => Promise<R[] | undefined>;
+  refresh: () => Promise<void>
 };
