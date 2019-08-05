@@ -141,6 +141,42 @@
     return _setPrototypeOf(o, p);
   }
 
+  function _objectWithoutPropertiesLoose(source, excluded) {
+    if (source == null) return {};
+    var target = {};
+    var sourceKeys = Object.keys(source);
+    var key, i;
+
+    for (i = 0; i < sourceKeys.length; i++) {
+      key = sourceKeys[i];
+      if (excluded.indexOf(key) >= 0) continue;
+      target[key] = source[key];
+    }
+
+    return target;
+  }
+
+  function _objectWithoutProperties(source, excluded) {
+    if (source == null) return {};
+
+    var target = _objectWithoutPropertiesLoose(source, excluded);
+
+    var key, i;
+
+    if (Object.getOwnPropertySymbols) {
+      var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
+
+      for (i = 0; i < sourceSymbolKeys.length; i++) {
+        key = sourceSymbolKeys[i];
+        if (excluded.indexOf(key) >= 0) continue;
+        if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
+        target[key] = source[key];
+      }
+    }
+
+    return target;
+  }
+
   function _assertThisInitialized(self) {
     if (self === void 0) {
       throw new ReferenceError("this hasn't been initialised - super() hasn't been called");
@@ -620,7 +656,7 @@
     var res = {};
 
     for (var key in obj) {
-      if (!eq(obj[key], reference[key], true)) {
+      if (!eq(obj[key], reference[key])) {
         res[key] = obj[key];
       }
     }
@@ -1998,9 +2034,1468 @@
     }));
   }
 
-  function install(Vue, options) {
-    if (install.installed) return;
-    install.installed = true;
+  var toString = function (x) { return Object.prototype.toString.call(x); };
+  var hasSymbol = typeof Symbol === 'function' && Symbol.for;
+  var noopFn = function (_) { return _; };
+  var sharedPropertyDefinition = {
+      enumerable: true,
+      configurable: true,
+      get: noopFn,
+      set: noopFn,
+  };
+  function proxy(target, key, getter, setter) {
+      sharedPropertyDefinition.get = getter;
+      sharedPropertyDefinition.set = setter || noopFn;
+      Object.defineProperty(target, key, sharedPropertyDefinition);
+  }
+  var hasOwnProperty = Object.prototype.hasOwnProperty;
+  function hasOwn(obj, key) {
+      return hasOwnProperty.call(obj, key);
+  }
+  function assert(condition, msg) {
+      if (!condition)
+          throw new Error("[vue-function-api] " + msg);
+  }
+  function isArray$1(x) {
+      return toString(x) === '[object Array]';
+  }
+  function isPlainObject(x) {
+      return toString(x) === '[object Object]';
+  }
+
+  var currentVue = null;
+  var currentVM = null;
+  function getCurrentVue() {
+      {
+          assert(currentVue, "must call Vue.use(plugin) before using any function.");
+      }
+      return currentVue;
+  }
+  function setCurrentVue(vue) {
+      currentVue = vue;
+  }
+  function getCurrentVM() {
+      return currentVM;
+  }
+  function setCurrentVM(vue) {
+      currentVM = vue;
+  }
+
+  var AbstractWrapper = /** @class */ (function () {
+      function AbstractWrapper() {
+      }
+      AbstractWrapper.prototype.setVmProperty = function (vm, propName) {
+          var _this = this;
+          this._vm = vm;
+          this._propName = propName;
+          var props = vm.$options.props;
+          var methods = vm.$options.methods;
+          var computed = vm.$options.computed;
+          var warn = getCurrentVue().util.warn;
+          if (!(propName in vm)) {
+              proxy(vm, propName, function () { return _this.value; }, function (val) {
+                  _this.value = val;
+              });
+              {
+                  this.exposeToDevtool();
+              }
+          }
+          else {
+              if (hasOwn(vm.$data, propName)) {
+                  warn("The setup binding property \"" + propName + "\" is already declared as a data.", vm);
+              }
+              else if (props && hasOwn(props, propName)) {
+                  warn("The setup binding property \"" + propName + "\" is already declared as a prop.", vm);
+              }
+              else if (methods && hasOwn(methods, propName)) {
+                  warn("The setup binding property \"" + propName + "\" is already declared as a method.", vm);
+              }
+              else if (computed && propName in computed) {
+                  warn("The setup binding property \"" + propName + "\" is already declared as a computed.", vm);
+              }
+              else {
+                  warn("The setup binding property \"" + propName + "\" is already declared.", vm);
+              }
+          }
+      };
+      return AbstractWrapper;
+  }());
+
+  /*! *****************************************************************************
+  Copyright (c) Microsoft Corporation. All rights reserved.
+  Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+  this file except in compliance with the License. You may obtain a copy of the
+  License at http://www.apache.org/licenses/LICENSE-2.0
+
+  THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+  KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
+  WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
+  MERCHANTABLITY OR NON-INFRINGEMENT.
+
+  See the Apache Version 2.0 License for specific language governing permissions
+  and limitations under the License.
+  ***************************************************************************** */
+  /* global Reflect, Promise */
+
+  var extendStatics = function(d, b) {
+      extendStatics = Object.setPrototypeOf ||
+          ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+          function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+      return extendStatics(d, b);
+  };
+
+  function __extends(d, b) {
+      extendStatics(d, b);
+      function __() { this.constructor = d; }
+      d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+  }
+
+  var __assign = function() {
+      __assign = Object.assign || function __assign(t) {
+          for (var s, i = 1, n = arguments.length; i < n; i++) {
+              s = arguments[i];
+              for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
+          }
+          return t;
+      };
+      return __assign.apply(this, arguments);
+  };
+
+  var ValueWrapper = /** @class */ (function (_super) {
+      __extends(ValueWrapper, _super);
+      function ValueWrapper(_internal) {
+          var _this = _super.call(this) || this;
+          _this._internal = _internal;
+          return _this;
+      }
+      Object.defineProperty(ValueWrapper.prototype, "value", {
+          get: function () {
+              return this._internal.$$state;
+          },
+          set: function (v) {
+              this._internal.$$state = v;
+          },
+          enumerable: true,
+          configurable: true
+      });
+      ValueWrapper.prototype.exposeToDevtool = function () {
+          var _this = this;
+          {
+              var vm = this._vm;
+              var name_1 = this._propName;
+              proxy(vm._data, name_1, function () { return _this.value; }, function (val) {
+                  _this.value = val;
+              });
+          }
+      };
+      return ValueWrapper;
+  }(AbstractWrapper));
+
+  var ComputedWrapper = /** @class */ (function (_super) {
+      __extends(ComputedWrapper, _super);
+      function ComputedWrapper(_internal) {
+          var _this = _super.call(this) || this;
+          _this._internal = _internal;
+          return _this;
+      }
+      Object.defineProperty(ComputedWrapper.prototype, "value", {
+          get: function () {
+              return this._internal.read();
+          },
+          set: function (val) {
+              if (!this._internal.write) {
+                  {
+                      getCurrentVue().util.warn('Computed property' +
+                          (this._propName ? " \"" + this._propName + "\"" : '') +
+                          ' was assigned to but it has no setter.', this._vm);
+                  }
+              }
+              else {
+                  this._internal.write(val);
+              }
+          },
+          enumerable: true,
+          configurable: true
+      });
+      ComputedWrapper.prototype.exposeToDevtool = function () {
+          var _this = this;
+          {
+              var vm = this._vm;
+              var name_1 = this._propName;
+              if (!vm.$options.computed) {
+                  vm.$options.computed = {};
+              }
+              proxy(vm.$options.computed, name_1, function () { return ({
+                  get: function () { return _this.value; },
+                  set: function (val) {
+                      _this.value = val;
+                  },
+              }); });
+          }
+      };
+      return ComputedWrapper;
+  }(AbstractWrapper));
+
+  function isWrapper(obj) {
+      return obj instanceof AbstractWrapper;
+  }
+  function ensureCurrentVMInFn(hook) {
+      var vm = getCurrentVM();
+      {
+          assert(vm, "\"" + hook + "\" get called outside of \"setup()\"");
+      }
+      return vm;
+  }
+  function observable(obj) {
+      var Vue = getCurrentVue();
+      if (Vue.observable) {
+          return Vue.observable(obj);
+      }
+      var silent = Vue.config.silent;
+      Vue.config.silent = true;
+      var vm = new Vue({
+          data: {
+              $$state: obj,
+          },
+      });
+      Vue.config.silent = silent;
+      return vm._data.$$state;
+  }
+  function compoundComputed(computed) {
+      var Vue = getCurrentVue();
+      var silent = Vue.config.silent;
+      Vue.config.silent = true;
+      var reactive = new Vue({
+          computed: computed,
+      });
+      Vue.config.silent = silent;
+      return reactive;
+  }
+
+  /**
+   * Helper that recursively merges two data objects together.
+   */
+  function mergeData(to, from) {
+      if (!from)
+          return to;
+      var key;
+      var toVal;
+      var fromVal;
+      var keys = hasSymbol ? Reflect.ownKeys(from) : Object.keys(from);
+      for (var i = 0; i < keys.length; i++) {
+          key = keys[i];
+          // in case the object is already observed...
+          if (key === '__ob__')
+              continue;
+          toVal = to[key];
+          fromVal = from[key];
+          if (!hasOwn(to, key)) {
+              to[key] = fromVal;
+          }
+          else if (toVal !== fromVal &&
+              (isPlainObject(toVal) && !isWrapper(toVal)) &&
+              (isPlainObject(fromVal) && !isWrapper(toVal))) {
+              mergeData(toVal, fromVal);
+          }
+      }
+      return to;
+  }
+  function install(Vue, _install) {
+      if (currentVue && currentVue === Vue) {
+          {
+              assert(false, 'already installed. Vue.use(plugin) should be called only once');
+          }
+          return;
+      }
+      Vue.config.optionMergeStrategies.setup = function (parent, child) {
+          return function mergedSetupFn(props, context) {
+              return mergeData(typeof child === 'function' ? child(props, context) || {} : {}, typeof parent === 'function' ? parent(props, context) || {} : {});
+          };
+      };
+      setCurrentVue(Vue);
+      _install(Vue);
+  }
+
+  function mixin(Vue) {
+      Vue.mixin({
+          created: vuexInit,
+      });
+      /**
+       * Vuex init hook, injected into each instances init hooks list.
+       */
+      function vuexInit() {
+          var vm = this;
+          var setup = vm.$options.setup;
+          if (!setup) {
+              return;
+          }
+          if (typeof setup !== 'function') {
+              {
+                  Vue.util.warn('The "setup" option should be a function that returns a object in component definitions.', vm);
+              }
+              return;
+          }
+          var binding;
+          setCurrentVM(vm);
+          var ctx = createContext(vm);
+          try {
+              binding = setup(vm.$props || {}, ctx);
+          }
+          catch (err) {
+              {
+                  Vue.util.warn("there is an error occuring in \"setup\"", vm);
+              }
+              console.log(err);
+          }
+          finally {
+              setCurrentVM(null);
+          }
+          if (!binding)
+              return;
+          if (!isPlainObject(binding)) {
+              {
+                  assert(false, "\"setup\" must return a \"Object\", get \"" + Object.prototype.toString
+                      .call(binding)
+                      .slice(8, -1) + "\"");
+              }
+              return;
+          }
+          Object.keys(binding).forEach(function (name) {
+              var bindingValue = binding[name];
+              if (isWrapper(bindingValue)) {
+                  bindingValue.setVmProperty(vm, name);
+              }
+              else {
+                  vm[name] = bindingValue;
+              }
+          });
+      }
+      function createContext(vm) {
+          var ctx = {};
+          var props = [
+              // 'el', // has workaround
+              // 'options',
+              'parent',
+              'root',
+              // 'children', // very likely
+              'refs',
+              'slots',
+              // 'scopedSlots', // has workaround
+              // 'isServer',
+              // 'ssrContext',
+              // 'vnode',
+              'attrs',
+          ];
+          var methodWithoutReturn = [
+              // 'on',  // very likely
+              // 'once', // very likely
+              // 'off', // very likely
+              'emit',
+          ];
+          props.forEach(function (key) {
+              proxy(ctx, key, function () { return vm["$" + key]; }, function () {
+                  Vue.util.warn("Cannot assign to '" + key + "' because it is a read-only property", vm);
+              });
+          });
+          methodWithoutReturn.forEach(function (key) {
+              return proxy(ctx, key, function () {
+                  var vmKey = "$" + key;
+                  return function () {
+                      var args = [];
+                      for (var _i = 0; _i < arguments.length; _i++) {
+                          args[_i] = arguments[_i];
+                      }
+                      var fn = vm[vmKey];
+                      fn.apply(vm, args);
+                  };
+              });
+          });
+          return ctx;
+      }
+  }
+
+  function upWrapping(obj) {
+      if (!obj) {
+          return obj;
+      }
+      var keys = Object.keys(obj);
+      for (var index = 0; index < keys.length; index++) {
+          var key = keys[index];
+          var value_1 = obj[key];
+          if (isWrapper(value_1)) {
+              obj[key] = value_1.value;
+          }
+          else if (isPlainObject(value_1) || isArray$1(value_1)) {
+              obj[key] = upWrapping(value_1);
+          }
+      }
+      return obj;
+  }
+  function value(value) {
+      return new ValueWrapper(observable({ $$state: isArray$1(value) || isPlainObject(value) ? upWrapping(value) : value }));
+  }
+
+  var genName = function (name) { return "on" + (name[0].toUpperCase() + name.slice(1)); };
+  function createLifeCycles(lifeCyclehooks, name) {
+      return function (callback) {
+          var vm = ensureCurrentVMInFn(name);
+          lifeCyclehooks.forEach(function (lifeCyclehook) { return vm.$on("hook:" + lifeCyclehook, callback); });
+      };
+  }
+  // only one event will be fired between destroyed and deactivated when an unmount occurs
+  var onUnmounted = createLifeCycles(['destroyed', 'deactivated'], genName('unmounted'));
+
+  function createSymbol(name) {
+      return hasSymbol ? Symbol.for(name) : name;
+  }
+  var WatcherPreFlushQueueKey = createSymbol('vfa.key.preFlushQueue');
+  var WatcherPostFlushQueueKey = createSymbol('vfa.key.postFlushQueue');
+
+  var initValue = {};
+  var fallbackVM;
+  function hasWatchEnv(vm) {
+      return vm[WatcherPreFlushQueueKey] !== undefined;
+  }
+  function installWatchEnv(vm) {
+      vm[WatcherPreFlushQueueKey] = [];
+      vm[WatcherPostFlushQueueKey] = [];
+      vm.$on('hook:beforeUpdate', createFlusher(WatcherPreFlushQueueKey));
+      vm.$on('hook:updated', createFlusher(WatcherPostFlushQueueKey));
+  }
+  function createFlusher(key) {
+      return function () {
+          flushQueue(this, key);
+      };
+  }
+  function flushQueue(vm, key) {
+      var queue = vm[key];
+      for (var index = 0; index < queue.length; index++) {
+          queue[index]();
+      }
+      queue.length = 0;
+  }
+  function flushWatcherCallback(vm, fn, mode) {
+      // flush all when beforeUpdate and updated are not fired
+      function fallbackFlush() {
+          vm.$nextTick(function () {
+              if (vm[WatcherPreFlushQueueKey].length) {
+                  flushQueue(vm, WatcherPreFlushQueueKey);
+              }
+              if (vm[WatcherPostFlushQueueKey].length) {
+                  flushQueue(vm, WatcherPostFlushQueueKey);
+              }
+          });
+      }
+      switch (mode) {
+          case 'pre':
+              fallbackFlush();
+              vm[WatcherPreFlushQueueKey].push(fn);
+              break;
+          case 'post':
+              fallbackFlush();
+              vm[WatcherPostFlushQueueKey].push(fn);
+              break;
+          case 'sync':
+              fn();
+              break;
+          default:
+              assert(false, "flush must be one of [\"post\", \"pre\", \"sync\"], but got " + mode);
+              break;
+      }
+  }
+  function createSingleSourceWatcher(vm, source, cb, options) {
+      var getter;
+      if (isWrapper(source)) {
+          getter = function () { return source.value; };
+      }
+      else {
+          getter = source;
+      }
+      var callbackRef = function (n, o) {
+          callbackRef = flush;
+          if (!options.lazy) {
+              cb(n, o);
+          }
+          else {
+              flush(n, o);
+          }
+      };
+      var flush = function (n, o) {
+          flushWatcherCallback(vm, function () {
+              cb(n, o);
+          }, options.flush);
+      };
+      return vm.$watch(getter, function (n, o) {
+          callbackRef(n, o);
+      }, {
+          immediate: !options.lazy,
+          deep: options.deep,
+          // @ts-ignore
+          sync: options.flush === 'sync',
+      });
+  }
+  function createMuiltSourceWatcher(vm, sources, cb, options) {
+      var execCallbackAfterNumRun = options.lazy ? false : sources.length;
+      var pendingCallback = false;
+      var watcherContext = [];
+      function execCallback() {
+          cb.apply(vm, watcherContext.reduce(function (acc, ctx) {
+              acc[0].push((ctx.value === initValue ? ctx.getter() : ctx.value));
+              acc[1].push((ctx.oldValue === initValue ? undefined : ctx.oldValue));
+              return acc;
+          }, [[], []]));
+      }
+      function stop() {
+          watcherContext.forEach(function (ctx) { return ctx.watcherStopHandle(); });
+      }
+      var callbackRef = function () {
+          if (execCallbackAfterNumRun !== false) {
+              if (--execCallbackAfterNumRun === 0) {
+                  execCallbackAfterNumRun = false;
+                  callbackRef = flush;
+                  execCallback();
+              }
+          }
+          else {
+              callbackRef = flush;
+              flush();
+          }
+      };
+      var flush = function () {
+          if (!pendingCallback) {
+              pendingCallback = true;
+              vm.$nextTick(function () {
+                  flushWatcherCallback(vm, function () {
+                      pendingCallback = false;
+                      execCallback();
+                  }, options.flush);
+              });
+          }
+      };
+      sources.forEach(function (source) {
+          var getter;
+          if (isWrapper(source)) {
+              getter = function () { return source.value; };
+          }
+          else {
+              getter = source;
+          }
+          var watcherCtx = {
+              getter: getter,
+              value: initValue,
+              oldValue: initValue,
+          };
+          // must push watcherCtx before create watcherStopHandle
+          watcherContext.push(watcherCtx);
+          watcherCtx.watcherStopHandle = vm.$watch(getter, function (n, o) {
+              watcherCtx.value = n;
+              watcherCtx.oldValue = o;
+              callbackRef();
+          }, {
+              immediate: !options.lazy,
+              deep: options.deep,
+              // @ts-ignore
+              // always set to true, so we can fully control the schedule
+              sync: true,
+          });
+      });
+      return stop;
+  }
+  function watch(source, cb, options) {
+      if (options === void 0) { options = {}; }
+      var opts = __assign({
+          lazy: false,
+          deep: false,
+          flush: 'post',
+      }, options);
+      var vm = getCurrentVM();
+      if (!vm) {
+          if (!fallbackVM) {
+              var Vue_1 = getCurrentVue();
+              var silent = Vue_1.config.silent;
+              Vue_1.config.silent = true;
+              fallbackVM = new Vue_1();
+              Vue_1.config.silent = silent;
+          }
+          vm = fallbackVM;
+          opts.flush = 'sync';
+      }
+      if (!hasWatchEnv(vm))
+          installWatchEnv(vm);
+      if (isArray$1(source)) {
+          return createMuiltSourceWatcher(vm, source, cb, opts);
+      }
+      return createSingleSourceWatcher(vm, source, cb, opts);
+  }
+
+  function computed(getter, setter) {
+      var computedHost = compoundComputed({
+          $$state: {
+              get: getter,
+              set: setter,
+          },
+      });
+      return new ComputedWrapper(__assign({ read: function () { return computedHost.$$state; } }, (setter && {
+          write: function (v) {
+              computedHost.$$state = v;
+          },
+      })));
+  }
+
+  function resolveInject(provideKey, vm) {
+      var source = vm;
+      while (source) {
+          // @ts-ignore
+          if (source._provided && hasOwn(source._provided, provideKey)) {
+              //@ts-ignore
+              return source._provided[provideKey];
+          }
+          source = source.$parent;
+      }
+      {
+          getCurrentVue().util.warn("Injection \"" + String(provideKey) + "\" not found", vm);
+      }
+  }
+  function inject(injectKey) {
+      if (!injectKey) {
+          return;
+      }
+      var vm = ensureCurrentVMInFn('inject');
+      return resolveInject(injectKey, vm);
+  }
+
+  var _install = function (Vue) { return install(Vue, mixin); };
+  // Auto install if it is not done yet and `window` has `Vue`.
+  // To allow users to avoid auto-installation in some cases,
+  if (currentVue && typeof window !== 'undefined' && window.Vue) {
+      _install(window.Vue);
+  }
+
+  function useKuzzle(config) {
+    var configProvider = config && config.provider;
+    var cached = getFromCache(configProvider, config);
+
+    if (cached) {
+      return cached;
+    }
+
+    var provider = configProvider || inject('kuzzleProvider');
+
+    if (!provider) {
+      throw new Error("[useKuzzle] Missing 'kuzzleProvider' to be provided via 'provide'");
+    }
+
+    if (configProvider) {
+      var defaultCached = getFromCache(provider, config);
+
+      if (defaultCached) {
+        setToCache(null, config, defaultCached);
+        return defaultCached;
+      }
+    }
+
+    var defaultIndex = provider.defaultIndex;
+    var defaultCollection = provider.defaultCollection;
+
+    var getClient = function getClient(options) {
+      if (options && options.client) {
+        if (_typeof(options.client) === 'object') {
+          return options.client;
+        }
+
+        if (!provider.clients) {
+          throw new Error("[useKuzzle] Missing 'clients' options in 'kuzzleProvider'");
+        } else {
+          var _client = provider.clients[options.client];
+
+          if (!_client) {
+            throw new Error("[useKuzzle] Missing client '".concat(options.client, "' in 'kuzzleProvider'"));
+          }
+
+          return _client;
+        }
+      }
+
+      if (!config || !config.client) {
+        return provider.defaultClient;
+      }
+
+      var client = provider.clients[config.client];
+
+      if (!client) {
+        throw new Error("[useKuzzle] Missing client '".concat(config.client, "' in 'kuzzleProvider'"));
+      }
+
+      return client;
+    };
+
+    var getIndexAndCollection = function getIndexAndCollection(options, throwWithMethodName) {
+      var index = options && options.index || defaultIndex;
+      var collection = options && options.collection || defaultCollection;
+
+      if (throwWithMethodName) {
+        if (!index) {
+          throw new Error("[useKuzzle] Missing index in '".concat(throwWithMethodName, "'"));
+        }
+
+        if (!collection) {
+          throw new Error("[useKuzzle] Missing collection in '".concat(throwWithMethodName, "'"));
+        }
+      }
+
+      return {
+        index: index,
+        collection: collection
+      };
+    };
+
+    var query = function query(body, options) {
+      var _getIndexAndCollectio = getIndexAndCollection(options),
+          index = _getIndexAndCollectio.index,
+          collection = _getIndexAndCollectio.collection;
+
+      try {
+        return getClient(options).query({
+          index: index,
+          collection: collection,
+          controller: options.controller,
+          action: options.action,
+          _id: options.id,
+          body: body,
+          refresh: 'wait_for'
+        });
+      } catch (e) {
+        throw new Error("[useKuzzle] ".concat(e));
+      }
+    };
+
+    var get =
+    /*#__PURE__*/
+    function () {
+      var _ref = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee(id, options) {
+        var _getIndexAndCollectio2, index, collection, response;
+
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _getIndexAndCollectio2 = getIndexAndCollection(options, 'getDocument'), index = _getIndexAndCollectio2.index, collection = _getIndexAndCollectio2.collection;
+                _context.next = 3;
+                return getClient(options).document.get(index, collection, id);
+
+              case 3:
+                response = _context.sent;
+                return _context.abrupt("return", _objectSpread({}, response._source, {
+                  _kuzzle_response: response
+                }));
+
+              case 5:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee);
+      }));
+
+      return function get(_x, _x2) {
+        return _ref.apply(this, arguments);
+      };
+    }();
+
+    var search =
+    /*#__PURE__*/
+    function () {
+      var _ref2 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee2(query, options) {
+        var _getIndexAndCollectio3, index, collection, _kuzzle_response, hits;
+
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                _getIndexAndCollectio3 = getIndexAndCollection(options, 'searchDocuments'), index = _getIndexAndCollectio3.index, collection = _getIndexAndCollectio3.collection;
+                _context2.next = 3;
+                return getClient(options).document.search(index, collection, {
+                  query: query,
+                  aggregations: options && options.aggregations,
+                  sort: options && options.sort
+                }, {
+                  from: options && options.from || 0,
+                  size: options && options.size || 10
+                });
+
+              case 3:
+                _kuzzle_response = _context2.sent;
+                hits = (_kuzzle_response.hits || []).slice();
+                hits._kuzzle_response = _kuzzle_response;
+                return _context2.abrupt("return", hits);
+
+              case 7:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2);
+      }));
+
+      return function search(_x3, _x4) {
+        return _ref2.apply(this, arguments);
+      };
+    }();
+
+    var create =
+    /*#__PURE__*/
+    function () {
+      var _ref3 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee3(doc, options) {
+        var _getIndexAndCollectio4, index, collection, _kuzzle_response;
+
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                _getIndexAndCollectio4 = getIndexAndCollection(options, 'createDocument'), index = _getIndexAndCollectio4.index, collection = _getIndexAndCollectio4.collection;
+
+                if (!(options && options.replace === true)) {
+                  _context3.next = 7;
+                  break;
+                }
+
+                if (options.id) {
+                  _context3.next = 4;
+                  break;
+                }
+
+                throw new Error("[vue-kuzzle] Missing 'id' in 'createDocument' called with 'replace: true'");
+
+              case 4:
+                _context3.next = 6;
+                return getClient(options).document.createOrReplace(index, collection, options && options.id, doc, {
+                  refresh: 'wait_for'
+                });
+
+              case 6:
+                _kuzzle_response = _context3.sent;
+
+              case 7:
+                _context3.next = 9;
+                return getClient(options).document.create(index, collection, doc, options && options.id, {
+                  refresh: 'wait_for'
+                });
+
+              case 9:
+                _kuzzle_response = _context3.sent;
+                return _context3.abrupt("return", _objectSpread({}, _kuzzle_response._source, {
+                  _kuzzle_response: _kuzzle_response
+                }));
+
+              case 11:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3);
+      }));
+
+      return function create(_x5, _x6) {
+        return _ref3.apply(this, arguments);
+      };
+    }();
+
+    var change =
+    /*#__PURE__*/
+    function () {
+      var _ref4 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee4(id, doc, options) {
+        var _getIndexAndCollectio5, index, collection, _kuzzle_response;
+
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                _getIndexAndCollectio5 = getIndexAndCollection(options, 'changeDocument'), index = _getIndexAndCollectio5.index, collection = _getIndexAndCollectio5.collection;
+
+                if (!(options && options.replace === true)) {
+                  _context4.next = 5;
+                  break;
+                }
+
+                _context4.next = 4;
+                return getClient(options).document.replace(index, collection, id, doc, {
+                  refresh: 'wait_for'
+                });
+
+              case 4:
+                _kuzzle_response = _context4.sent;
+
+              case 5:
+                _context4.next = 7;
+                return getClient(options).document.update(index, collection, id, doc, {
+                  refresh: 'wait_for'
+                });
+
+              case 7:
+                _kuzzle_response = _context4.sent;
+                return _context4.abrupt("return", _objectSpread({}, _kuzzle_response._source, {
+                  _kuzzle_response: _kuzzle_response
+                }));
+
+              case 9:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4);
+      }));
+
+      return function change(_x7, _x8, _x9) {
+        return _ref4.apply(this, arguments);
+      };
+    }();
+
+    var deleteDoc = function deleteDoc(id, options) {
+      var _getIndexAndCollectio6 = getIndexAndCollection(options, 'deleteDocument'),
+          index = _getIndexAndCollectio6.index,
+          collection = _getIndexAndCollectio6.collection;
+
+      return getClient(options).document.delete(index, collection, id, {
+        refresh: 'wait_for'
+      });
+    };
+
+    var kuzzle = {
+      provider: provider,
+      getClient: getClient,
+      query: query,
+      get: get,
+      search: search,
+      create: create,
+      change: change,
+      delete: deleteDoc,
+      getIndexAndCollection: getIndexAndCollection
+    };
+    setToCache(configProvider, config, kuzzle);
+    return kuzzle;
+  }
+  function fetchKuzzle(options) {
+    if (!options || !options.document) {
+      throw new Error('[fetchKuzzle] Missing `document` in options');
+    }
+
+    var kuzzle = useKuzzle(options);
+    var isReading = value(false);
+    var isWriting = value(false);
+    var rawData = value(null);
+    var error = value(null);
+    var documentId = typeof options.document === 'function' ? computed(options.document) : value(options.document);
+    var skip = typeof options.skip === 'function' ? computed(options.skip) : value(options.skip);
+
+    var setError = function setError(err) {
+      error.value = err;
+      isReading.value = false;
+      isWriting.value = false;
+
+      if (typeof options.error === 'function') {
+        options.error(err);
+      } else {
+        console.error(err);
+      }
+    };
+
+    var changePromise;
+    watch(function () {
+      if (skip.value) {
+        return null;
+      }
+
+      return documentId.value;
+    },
+    /*#__PURE__*/
+    function () {
+      var _ref5 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee5(id) {
+        var _ref6, _kuzzle_response, dataValue;
+
+        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                if (id) {
+                  _context5.next = 2;
+                  break;
+                }
+
+                return _context5.abrupt("return");
+
+              case 2:
+                isReading.value = true;
+                _context5.next = 5;
+                return kuzzle.provider.connectAll();
+
+              case 5:
+                _context5.prev = 5;
+                _context5.next = 8;
+                return kuzzle.get(id, options);
+
+              case 8:
+                _ref6 = _context5.sent;
+                _kuzzle_response = _ref6._kuzzle_response;
+                dataValue = _objectWithoutProperties(_ref6, ["_kuzzle_response"]);
+                isReading.value = false;
+
+                if (options.update) {
+                  rawData.value = options.update(dataValue, _kuzzle_response);
+                } else {
+                  rawData.value = dataValue;
+                }
+
+                if (!changePromise) {
+                  changePromise = Promise.resolve(rawData.value);
+                }
+
+                _context5.next = 19;
+                break;
+
+              case 16:
+                _context5.prev = 16;
+                _context5.t0 = _context5["catch"](5);
+                setError(_context5.t0);
+
+              case 19:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5, null, [[5, 16]]);
+      }));
+
+      return function (_x10) {
+        return _ref5.apply(this, arguments);
+      };
+    }(), {
+      lazy: false
+    });
+
+    var change =
+    /*#__PURE__*/
+    function () {
+      var _ref7 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee7(newDoc) {
+        var currentChangeRun;
+        return regeneratorRuntime.wrap(function _callee7$(_context7) {
+          while (1) {
+            switch (_context7.prev = _context7.next) {
+              case 0:
+                isWriting.value = true;
+
+                if (!changePromise) {
+                  changePromise = Promise.resolve(null);
+                }
+
+                currentChangeRun = changePromise = changePromise.then(
+                /*#__PURE__*/
+                function () {
+                  var _ref8 = _asyncToGenerator(
+                  /*#__PURE__*/
+                  regeneratorRuntime.mark(function _callee6(savedDoc) {
+                    var isUpdate, changeDoc, _kuzzle$getIndexAndCo, index, collection, changeContext, changeFilter, client, updateResp, serverDoc, returnDoc;
+
+                    return regeneratorRuntime.wrap(function _callee6$(_context6) {
+                      while (1) {
+                        switch (_context6.prev = _context6.next) {
+                          case 0:
+                            isUpdate = savedDoc && Object.keys(savedDoc).every(function (key) {
+                              return key === '_kuzzle_info' || newDoc.hasOwnProperty(key);
+                            }); // Prepare changeDoc
+
+                            changeDoc = isUpdate ? getRootChanges(savedDoc, newDoc) : newDoc;
+                            _kuzzle$getIndexAndCo = kuzzle.getIndexAndCollection(options, 'change'), index = _kuzzle$getIndexAndCo.index, collection = _kuzzle$getIndexAndCo.collection;
+                            changeContext = {
+                              kuzzle: kuzzle,
+                              index: index,
+                              collection: collection,
+                              id: documentId.value,
+                              savedDocument: savedDoc,
+                              changedDocument: newDoc // key missing
+
+                            };
+                            changeFilter = options.changeFilter || kuzzle.provider.changeFilter;
+
+                            if (!(typeof changeFilter === 'function')) {
+                              _context6.next = 16;
+                              break;
+                            }
+
+                            _context6.prev = 6;
+                            _context6.next = 9;
+                            return Promise.resolve(changeFilter(changeDoc, changeContext));
+
+                          case 9:
+                            changeDoc = _context6.sent;
+                            _context6.next = 16;
+                            break;
+
+                          case 12:
+                            _context6.prev = 12;
+                            _context6.t0 = _context6["catch"](6);
+                            setError(_context6.t0);
+                            return _context6.abrupt("return", savedDoc);
+
+                          case 16:
+                            if (!(!changeDoc || Object.keys(changeDoc).length === 0)) {
+                              _context6.next = 19;
+                              break;
+                            }
+
+                            isWriting.value = false;
+                            return _context6.abrupt("return", savedDoc);
+
+                          case 19:
+                            // Attempt change
+                            client = kuzzle.getClient(options);
+                            _context6.prev = 20;
+
+                            if (documentId.value) {
+                              _context6.next = 27;
+                              break;
+                            }
+
+                            _context6.next = 24;
+                            return client.document.create(index, collection, changeDoc, null, {
+                              refresh: 'wait_for'
+                            });
+
+                          case 24:
+                            updateResp = _context6.sent;
+                            _context6.next = 36;
+                            break;
+
+                          case 27:
+                            if (isUpdate) {
+                              _context6.next = 33;
+                              break;
+                            }
+
+                            _context6.next = 30;
+                            return client.document.createOrReplace(index, collection, documentId.value, changeDoc, {
+                              refresh: 'wait_for'
+                            });
+
+                          case 30:
+                            updateResp = _context6.sent;
+                            _context6.next = 36;
+                            break;
+
+                          case 33:
+                            _context6.next = 35;
+                            return client.document.update(index, collection, documentId.value, changeDoc, {
+                              refresh: 'wait_for'
+                            });
+
+                          case 35:
+                            updateResp = _context6.sent;
+
+                          case 36:
+                            _context6.next = 38;
+                            return client.document.get(index, collection, updateResp._id);
+
+                          case 38:
+                            serverDoc = _context6.sent._source;
+                            returnDoc = serverDoc;
+
+                            if (!(typeof options.update === 'function')) {
+                              _context6.next = 44;
+                              break;
+                            }
+
+                            _context6.next = 43;
+                            return Promise.resolve(options.update(serverDoc, updateResp, updateResp.created ? 'created' : updateResp.result));
+
+                          case 43:
+                            returnDoc = _context6.sent;
+
+                          case 44:
+                            if (changePromise === currentChangeRun) {
+                              rawData.value = returnDoc;
+                            }
+
+                            isWriting.value = false;
+                            return _context6.abrupt("return", returnDoc);
+
+                          case 49:
+                            _context6.prev = 49;
+                            _context6.t1 = _context6["catch"](20);
+                            setError(_context6.t1);
+                            return _context6.abrupt("return", savedDoc);
+
+                          case 53:
+                          case "end":
+                            return _context6.stop();
+                        }
+                      }
+                    }, _callee6, null, [[6, 12], [20, 49]]);
+                  }));
+
+                  return function (_x12) {
+                    return _ref8.apply(this, arguments);
+                  };
+                }());
+                return _context7.abrupt("return", currentChangeRun.then(function () {
+                  return rawData.value;
+                }));
+
+              case 4:
+              case "end":
+                return _context7.stop();
+            }
+          }
+        }, _callee7);
+      }));
+
+      return function change(_x11) {
+        return _ref7.apply(this, arguments);
+      };
+    }();
+
+    var isLoading = computed(function () {
+      return isReading.value || isWriting.value;
+    });
+    var data = computed(function () {
+      return rawData.value;
+    }, change);
+    return {
+      kuzzle: kuzzle,
+      isReading: isReading,
+      isWriting: isWriting,
+      isLoading: isLoading,
+      data: data,
+      error: error,
+      change: change
+    };
+  }
+  function searchKuzzle(options) {
+    if (!options || !options.search) {
+      throw new Error('[searchKuzzle] Missing `search` in options');
+    }
+
+    var kuzzle = useKuzzle(options);
+    var isLoading = value(false);
+    var data = value(null);
+    var error = value(null);
+    var response = value(null);
+    var searchQuery = typeof options.search === 'function' ? computed(options.search) : value(options.search);
+    var skip = typeof options.skip === 'function' ? computed(options.skip) : value(options.skip);
+
+    var setData = function setData(dataValue, resp) {
+      response.value = resp;
+
+      if (options.update) {
+        data.value = options.update(dataValue, resp);
+      } else {
+        data.value = dataValue;
+      }
+    };
+
+    var setError = function setError(err) {
+      error.value = err;
+      isLoading.value = false;
+
+      if (typeof options.error === 'function') {
+        options.error(err);
+      } else {
+        console.error(err);
+      }
+    };
+
+    watch(function () {
+      if (skip.value) {
+        return null;
+      }
+
+      return searchQuery.value;
+    },
+    /*#__PURE__*/
+    function () {
+      var _ref9 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee8(search) {
+        var resp;
+        return regeneratorRuntime.wrap(function _callee8$(_context8) {
+          while (1) {
+            switch (_context8.prev = _context8.next) {
+              case 0:
+                if (search) {
+                  _context8.next = 2;
+                  break;
+                }
+
+                return _context8.abrupt("return");
+
+              case 2:
+                isLoading.value = true;
+                _context8.next = 5;
+                return kuzzle.provider.connectAll();
+
+              case 5:
+                _context8.prev = 5;
+                _context8.next = 8;
+                return kuzzle.search(search.query || search, search.query ? _objectSpread({}, options, {
+                  aggregations: search.aggregations,
+                  sort: search.sort,
+                  from: search.from,
+                  size: search.size
+                }) : options);
+
+              case 8:
+                resp = _context8.sent;
+                isLoading.value = false;
+                setData(resp, resp._kuzzle_response);
+                _context8.next = 16;
+                break;
+
+              case 13:
+                _context8.prev = 13;
+                _context8.t0 = _context8["catch"](5);
+                setError(_context8.t0);
+
+              case 16:
+              case "end":
+                return _context8.stop();
+            }
+          }
+        }, _callee8, null, [[5, 13]]);
+      }));
+
+      return function (_x13) {
+        return _ref9.apply(this, arguments);
+      };
+    }(), {
+      lazy: false
+    });
+    var hasMore = computed(function () {
+      return response.value ? response.value.fetched < response.value.total : false;
+    });
+
+    var fetchMore =
+    /*#__PURE__*/
+    function () {
+      var _ref10 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee9() {
+        var moreResponse, fetchMoreData;
+        return regeneratorRuntime.wrap(function _callee9$(_context9) {
+          while (1) {
+            switch (_context9.prev = _context9.next) {
+              case 0:
+                if (response.value) {
+                  _context9.next = 2;
+                  break;
+                }
+
+                return _context9.abrupt("return");
+
+              case 2:
+                isLoading.value = true;
+                _context9.prev = 3;
+                _context9.next = 6;
+                return response.value.next();
+
+              case 6:
+                moreResponse = _context9.sent;
+                fetchMoreData = moreResponse.hits.map(function (_ref11) {
+                  var _source = _ref11._source;
+                  return _source;
+                });
+
+                if (fetchMoreData.length > 0) {
+                  setData([].concat(_toConsumableArray(data.value), _toConsumableArray(fetchMoreData)), response.value);
+                }
+
+                _context9.next = 14;
+                break;
+
+              case 11:
+                _context9.prev = 11;
+                _context9.t0 = _context9["catch"](3);
+                setError(_context9.t0);
+
+              case 14:
+              case "end":
+                return _context9.stop();
+            }
+          }
+        }, _callee9, null, [[3, 11]]);
+      }));
+
+      return function fetchMore() {
+        return _ref10.apply(this, arguments);
+      };
+    }();
+
+    return {
+      kuzzle: kuzzle,
+      isLoading: isLoading,
+      data: data,
+      error: error,
+      hasMore: hasMore,
+      fetchMore: fetchMore
+    };
+  } //
+  // useKuzzle cache
+  //
+
+  var useKuzzleCache = new Map();
+
+  var getProviderKey = function getProviderKey(provider) {
+    return provider || 'default';
+  };
+
+  var getConfigKey = function getConfigKey(config) {
+    var configKey = null;
+
+    if (config) {
+      configKey = config.client || 'default';
+    }
+
+    return configKey || 'default';
+  };
+
+  function getFromCache(provider, config) {
+    var providerKey = getProviderKey(provider);
+    var cacheHit = useKuzzleCache.get(providerKey);
+
+    if (!cacheHit) {
+      return null;
+    }
+
+    var configKey = getConfigKey(config);
+    return cacheHit[configKey];
+  }
+
+  function setToCache(provider, config, kuzzle) {
+    var providerKey = getProviderKey(provider);
+    var cacheHit = useKuzzleCache.get(providerKey);
+    var configKey = getConfigKey(config);
+    var newCacheHit = cacheHit;
+
+    if (!newCacheHit) {
+      newCacheHit = {};
+    }
+
+    newCacheHit[configKey] = kuzzle;
+    useKuzzleCache.set(providerKey, newCacheHit);
+  }
+
+  function install$1(Vue, options) {
+    if (install$1.installed) return;
+    install$1.installed = true;
     var vueVersion = Vue.version.substr(0, Vue.version.indexOf('.')); // Lazy creation
 
     Object.defineProperty(Vue.prototype, '$kuzzle', {
@@ -2014,7 +3509,7 @@
     });
     installMixin(Vue, vueVersion);
   }
-  KuzzleProvider.install = install; // Kuzzle provider
+  KuzzleProvider.install = install$1; // Kuzzle provider
 
   var KuzzleProvider$1 = KuzzleProvider; // Components
   // export const KuzzleQuery = CKuzzleQuery;
@@ -2034,9 +3529,12 @@
     GlobalVue.use(KuzzleProvider);
   }
 
-  exports.install = install;
+  exports.install = install$1;
   exports.KuzzleProvider = KuzzleProvider$1;
   exports.default = KuzzleProvider;
+  exports.useKuzzle = useKuzzle;
+  exports.fetchKuzzle = fetchKuzzle;
+  exports.searchKuzzle = searchKuzzle;
 
   Object.defineProperty(exports, '__esModule', { value: true });
 
