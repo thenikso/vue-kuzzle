@@ -1,7 +1,7 @@
 export function getRootChanges(reference, obj) {
   const res = {};
   for (const key in obj) {
-    if (!eq(obj[key], reference[key], true)) {
+    if (!eq(obj[key], reference[key])) {
       res[key] = obj[key];
     }
   }

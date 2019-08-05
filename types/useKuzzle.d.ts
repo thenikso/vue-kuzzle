@@ -77,9 +77,12 @@ export function fetchKuzzle<R = any>(
   options: VueKuzzleDocumentOptions<any, R>,
 ): {
   kuzzle: UseKuzzle;
+  isReading: Wrapper<boolean>;
+  isWriting: Wrapper<boolean>;
   isLoading: Wrapper<boolean>;
   data: Wrapper<R>;
   error: Wrapper<Error>;
+  change: (newDoc: R) => Promise<R>;
 };
 
 export function searchKuzzle<R = any>(

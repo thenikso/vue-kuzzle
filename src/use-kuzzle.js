@@ -1,4 +1,5 @@
 import { inject, value, computed, watch } from 'vue-function-api';
+import { getRootChanges } from './utils';
 
 export function useKuzzle(config) {
   const configProvider = config && config.provider;
@@ -217,6 +218,7 @@ export function useKuzzle(config) {
     create,
     change,
     delete: deleteDoc,
+    getIndexAndCollection,
   };
 
   setToCache(configProvider, config, kuzzle);
@@ -230,8 +232,9 @@ export function fetchKuzzle(options) {
   }
 
   const kuzzle = useKuzzle(options);
-  const isLoading = value(false);
-  const data = value(null);
+  const isReading = value(false);
+  const isWriting = value(false);
+  const rawData = value(null);
   const error = value(null);
 
   const documentId =
@@ -242,6 +245,19 @@ export function fetchKuzzle(options) {
     typeof options.skip === 'function'
       ? computed(options.skip)
       : value(options.skip);
+
+  const setError = err => {
+    error.value = err;
+    isReading.value = false;
+    isWriting.value = false;
+    if (typeof options.error === 'function') {
+      options.error(err);
+    } else {
+      console.error(err);
+    }
+  };
+
+  let changePromise;
 
   watch(
     () => {
@@ -254,25 +270,24 @@ export function fetchKuzzle(options) {
       if (!id) {
         return;
       }
-      isLoading.value = true;
+      isReading.value = true;
       await kuzzle.provider.connectAll();
       try {
         const { _kuzzle_response, ...dataValue } = await kuzzle.get(
           id,
           options,
         );
-        isLoading.value = false;
+        isReading.value = false;
         if (options.update) {
-          data.value = options.update(dataValue, _kuzzle_response);
+          rawData.value = options.update(dataValue, _kuzzle_response);
         } else {
-          data.value = dataValue;
+          rawData.value = dataValue;
+        }
+        if (!changePromise) {
+          changePromise = Promise.resolve(rawData.value);
         }
       } catch (err) {
-        error.value = err;
-        isLoading.value = false;
-        if (typeof options.error === 'function') {
-          options.error(err);
-        }
+        setError(err);
       }
     },
     {
@@ -280,11 +295,128 @@ export function fetchKuzzle(options) {
     },
   );
 
+  const change = async newDoc => {
+    isWriting.value = true;
+    if (!changePromise) {
+      changePromise = Promise.resolve(null);
+    }
+    const currentChangeRun = (changePromise = changePromise.then(
+      async savedDoc => {
+        const isUpdate =
+          savedDoc &&
+          Object.keys(savedDoc).every(
+            key => key === '_kuzzle_info' || newDoc.hasOwnProperty(key),
+          );
+        // Prepare changeDoc
+        let changeDoc = isUpdate ? getRootChanges(savedDoc, newDoc) : newDoc;
+        const { index, collection } = kuzzle.getIndexAndCollection(
+          options,
+          'change',
+        );
+        const changeContext = {
+          kuzzle,
+          index,
+          collection,
+          id: documentId.value,
+          savedDocument: savedDoc,
+          changedDocument: newDoc,
+          // key missing
+        };
+        const changeFilter =
+          options.changeFilter || kuzzle.provider.changeFilter;
+        if (typeof changeFilter === 'function') {
+          try {
+            changeDoc = await Promise.resolve(
+              changeFilter(changeDoc, changeContext),
+            );
+          } catch (err) {
+            setError(err);
+            return savedDoc;
+          }
+        }
+        // No changes to be applied
+        if (!changeDoc || Object.keys(changeDoc).length === 0) {
+          isWriting.value = false;
+          return savedDoc;
+        }
+        // Attempt change
+        const client = kuzzle.getClient(options);
+        try {
+          let updateResp;
+          if (!documentId.value) {
+            updateResp = await client.document.create(
+              index,
+              collection,
+              changeDoc,
+              null,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          } else if (!isUpdate) {
+            updateResp = await client.document.createOrReplace(
+              index,
+              collection,
+              documentId.value,
+              changeDoc,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          } else {
+            updateResp = await client.document.update(
+              index,
+              collection,
+              documentId.value,
+              changeDoc,
+              {
+                refresh: 'wait_for',
+              },
+            );
+          }
+          const serverDoc = (await client.document.get(
+            index,
+            collection,
+            updateResp._id,
+          ))._source;
+          let returnDoc = serverDoc;
+          if (typeof options.update === 'function') {
+            returnDoc = await Promise.resolve(
+              options.update(
+                serverDoc,
+                updateResp,
+                updateResp.created ? 'created' : updateResp.result,
+              ),
+            );
+          }
+          if (changePromise === currentChangeRun) {
+            rawData.value = returnDoc;
+          }
+          isWriting.value = false;
+          return returnDoc;
+        } catch (err) {
+          setError(err);
+          return savedDoc;
+        }
+      },
+    ));
+    return currentChangeRun.then(() => rawData.value);
+  };
+
+  const isLoading = computed(() => {
+    return isReading.value || isWriting.value;
+  });
+
+  const data = computed(() => rawData.value, change);
+
   return {
     kuzzle,
+    isReading,
+    isWriting,
     isLoading,
     data,
     error,
+    change,
   };
 }
 
@@ -351,7 +483,7 @@ export function searchKuzzle(options) {
                 from: search.from,
                 size: search.size,
               }
-            : {},
+            : options,
         );
         isLoading.value = false;
         setData(resp, resp._kuzzle_response);
