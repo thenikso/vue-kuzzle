@@ -468,18 +468,13 @@ export function searchKuzzle(options) {
     isLoading.value = true;
     await kuzzle.provider.connectAll();
     try {
-      const resp = await kuzzle.search(
-        search.query || search,
-        search.query
-          ? {
-              ...options,
-              aggregations: search.aggregations,
-              sort: search.sort,
-              from: search.from,
-              size: search.size,
-            }
-          : options,
-      );
+      const resp = await kuzzle.search(search.query || {}, {
+        ...options,
+        aggregations: search.aggregations,
+        sort: search.sort,
+        from: search.from,
+        size: search.size,
+      });
       isLoading.value = false;
       setData(resp, resp._kuzzle_response);
     } catch (err) {
