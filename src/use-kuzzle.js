@@ -125,7 +125,9 @@ export function useKuzzle(config) {
         size: (options && options.size) || 10,
       },
     );
-    const hits = (_kuzzle_response.hits || []).slice();
+    const hits = (_kuzzle_response.hits || [])
+      .slice()
+      .map(({ _source }) => _source);
     hits._kuzzle_response = _kuzzle_response;
     return hits;
   };
