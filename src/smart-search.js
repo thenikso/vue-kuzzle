@@ -54,6 +54,14 @@ export default class SmartSearch extends SmartKuzzle {
   }
 
   nextResult(data, response) {
+    if (typeof this.vm.$kuzzle.provider.afterFetch === 'function') {
+      doc = this.vm.$kuzzle.provider.afterFetch.call(
+        this.vm,
+        data,
+        response,
+        'search',
+      );
+    }
     if (typeof this.options.update === 'function') {
       this.setData(this.options.update.call(this.vm, data, response));
     } else {

@@ -92,6 +92,14 @@ export default class SmartQuery extends SmartKuzzle {
     if (!doc) {
       return;
     }
+    if (typeof this.vm.$kuzzle.provider.afterFetch === 'function') {
+      doc = this.vm.$kuzzle.provider.afterFetch.call(
+        this.vm,
+        doc,
+        response,
+        operation,
+      );
+    }
     if (typeof this.options.update === 'function') {
       const respDoc = await Promise.resolve(
         this.options.update.call(this.vm, doc, response, operation),
