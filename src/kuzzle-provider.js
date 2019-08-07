@@ -11,6 +11,7 @@ export class KuzzleProvider {
     this.watchLoading = options.watchLoading;
     this.errorHandler = options.errorHandler;
     this.beforeChange = options.beforeChange;
+    this.afterFetch = options.afterFetch;
 
     this.connectAll();
   }

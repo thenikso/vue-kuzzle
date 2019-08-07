@@ -1,12 +1,13 @@
 import Vue, { AsyncComponent } from 'vue';
 import { Kuzzle } from 'kuzzle-sdk';
-import { VueKuzzleComponentOption } from './options';
+import { VueKuzzleComponentOption, FetchFilter } from './options';
 import {
   WatchLoading,
   ErrorHandler,
   VueKuzzleOptions,
   ChangeFilter,
 } from './options';
+import { UseKuzzle } from './useKuzzle';
 
 export type VueKuzzleComponent<V extends Vue = Vue> =
   | VueKuzzleComponentOption<V>
@@ -27,6 +28,11 @@ export class KuzzleProvider<V = any> {
      * changed. This method should return the document to be sent to the server.
      */
     beforeChange?: ChangeFilter<V>;
+    /**
+     * A filter function to be applied to all documents or searches that are
+     * fetched from the server.
+     */
+    afterFetch?: FetchFilter<V>;
   });
   clients: { [key: string]: Kuzzle };
   defaultClient: Kuzzle;
