@@ -324,12 +324,12 @@ export function fetchKuzzle(options) {
           changedDocument: newDoc,
           // key missing
         };
-        const changeFilter =
-          options.changeFilter || kuzzle.provider.changeFilter;
-        if (typeof changeFilter === 'function') {
+        const beforeChange =
+          options.beforeChange || kuzzle.provider.beforeChange;
+        if (typeof beforeChange === 'function') {
           try {
             changeDoc = await Promise.resolve(
-              changeFilter(changeDoc, changeContext),
+              beforeChange(changeDoc, changeContext),
             );
           } catch (err) {
             setError(err);

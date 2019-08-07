@@ -56,7 +56,7 @@ export interface VueKuzzleDocumentOptions<V, R>
     resp: KuzzleDocumentGetResponse<R> | KuzzleDocumentUpdateResponse,
     op: 'get' | 'subscription' | 'update' | 'replace',
   ) => any;
-  changeFilter?: ChangeFilter<V>;
+  beforeChange?: ChangeFilter<V>;
 }
 
 export interface VueKuzzleSearchOptions<V, R>

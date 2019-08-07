@@ -13,16 +13,20 @@ export type VueKuzzleComponent<V extends Vue = Vue> =
   | typeof Vue
   | AsyncComponent;
 
-export class KuzzleProvider {
+export class KuzzleProvider<V = any> {
   constructor(options: {
     defaultClient: Kuzzle;
     defaultIndex?: string;
     defaultCollection?: string;
-    defaultOptions?: VueKuzzleOptions<any>;
+    defaultOptions?: VueKuzzleOptions<V>;
     clients?: { [key: string]: Kuzzle };
-    watchLoading?: WatchLoading<any>;
-    errorHandler?: ErrorHandler<any>;
-    changeFilter?: ChangeFilter<any>;
+    watchLoading?: WatchLoading<V>;
+    errorHandler?: ErrorHandler<V>;
+    /**
+     * A filter function to be applied to all documents before they are
+     * changed. This method should return the document to be sent to the server.
+     */
+    beforeChange?: ChangeFilter<V>;
   });
   clients: { [key: string]: Kuzzle };
   defaultClient: Kuzzle;

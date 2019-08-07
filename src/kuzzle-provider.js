@@ -10,7 +10,7 @@ export class KuzzleProvider {
     this.defaultCollection = options.defaultCollection;
     this.watchLoading = options.watchLoading;
     this.errorHandler = options.errorHandler;
-    this.changeFilter = options.changeFilter;
+    this.beforeChange = options.beforeChange;
 
     this.connectAll();
   }

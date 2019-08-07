@@ -197,14 +197,14 @@ export default class SmartQuery extends SmartKuzzle {
           savedDocument: savedDoc,
           changedDocument: newDoc,
         };
-        const changeFilter =
-          this.options.changeFilter ||
-          this.vm.$kuzzle.changeFilter ||
-          this.vm.$kuzzle.provider.changeFilter;
-        if (typeof changeFilter === 'function') {
+        const beforeChange =
+          this.options.beforeChange ||
+          this.vm.$kuzzle.beforeChange ||
+          this.vm.$kuzzle.provider.beforeChange;
+        if (typeof beforeChange === 'function') {
           try {
             changeDoc = await Promise.resolve(
-              changeFilter.call(this.vm, changeDoc, changeContext),
+              beforeChange.call(this.vm, changeDoc, changeContext),
             );
           } catch (error) {
             this.catchError(error);
