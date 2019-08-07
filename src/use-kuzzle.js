@@ -77,6 +77,9 @@ export function useKuzzle(config) {
     return { index, collection };
   };
 
+  const afterFetch =
+    typeof provider.afterFetch === 'function' ? provider.afterFetch : x => x;
+
   const query = (body, options) => {
     const { index, collection } = getIndexAndCollection(options);
     try {
@@ -102,7 +105,7 @@ export function useKuzzle(config) {
       id,
     );
     return {
-      ...response._source,
+      ...afterFetch.call(null, response._source, response, 'get'),
       _kuzzle_response: response,
     };
   };
@@ -125,9 +128,10 @@ export function useKuzzle(config) {
         size: (options && options.size) || 10,
       },
     );
-    const hits = (_kuzzle_response.hits || [])
+    let hits = (_kuzzle_response.hits || [])
       .slice()
       .map(({ _source }) => _source);
+    hits = afterFetch.call(null, hits, _kuzzle_response, 'search');
     hits._kuzzle_response = _kuzzle_response;
     return hits;
   };
@@ -164,7 +168,12 @@ export function useKuzzle(config) {
       },
     );
     return {
-      ..._kuzzle_response._source,
+      ...afterFetch.call(
+        null,
+        _kuzzle_response._source,
+        _kuzzle_response,
+        _kuzzle_response.created ? 'create' : _kuzzle_response.result,
+      ),
       _kuzzle_response,
     };
   };
@@ -196,7 +205,12 @@ export function useKuzzle(config) {
       },
     );
     return {
-      ..._kuzzle_response._source,
+      ...afterFetch.call(
+        null,
+        _kuzzle_response._source,
+        _kuzzle_response,
+        _kuzzle_response.response,
+      ),
       _kuzzle_response,
     };
   };
@@ -324,12 +338,12 @@ export function fetchKuzzle(options) {
           changedDocument: newDoc,
           // key missing
         };
-        const changeFilter =
-          options.changeFilter || kuzzle.provider.changeFilter;
-        if (typeof changeFilter === 'function') {
+        const beforeChange =
+          options.beforeChange || kuzzle.provider.beforeChange;
+        if (typeof beforeChange === 'function') {
           try {
             changeDoc = await Promise.resolve(
-              changeFilter(changeDoc, changeContext),
+              beforeChange.call(null, changeDoc, changeContext),
             );
           } catch (err) {
             setError(err);

@@ -3,6 +3,7 @@ import {
   KuzzleDocumentSearchResponse,
   KuzzleDocumentUpdateResponse,
 } from 'kuzzle-sdk';
+import { UseKuzzle } from './useKuzzle';
 
 type VueKuzzleThisType<V> = V & { [key: string]: any };
 
@@ -11,7 +12,9 @@ export type WatchLoading<V> = (
   isLoading: boolean,
   countModifier: number,
 ) => void;
+
 export type ErrorHandler<V> = (this: VueKuzzleThisType<V>, error: any) => void;
+
 export type VueKuzzleSearchConfig = {
   query?: object;
   aggregations?: object;
@@ -19,18 +22,35 @@ export type VueKuzzleSearchConfig = {
   from?: number;
   size?: number;
 };
-export type ChangeContext = {
+
+export type FilterContext<Extra = never> = Extra & {
   index: string;
   collection: string;
   id: string;
-  documentKey: string;
-  savedDocument: any;
-  updatedDocument: any;
 };
+
 export type ChangeFilter<V> = (
   this: VueKuzzleThisType<V>,
   changeDocument: any,
-  changeContext: ChangeContext,
+  changeContext: FilterContext<
+    ([V] extends [never] ? { kuzzle: UseKuzzle } : { documentKey: string }) & {
+      savedDocument: any;
+      updatedDocument: any;
+    }
+  >,
+) => any;
+
+type UpdateFilterResponse<R> =
+  | KuzzleDocumentResponse<R>
+  | KuzzleDocumentSearchResponse<R>;
+
+type UpdateFilterOperation = KuzzleDocumentOperation | 'search';
+
+export type FetchFilter<V, R = any> = (
+  this: VueKuzzleThisType<V>,
+  data: R,
+  resp: UpdateFilterResponse<R>,
+  operation: UpdateFilterOperation,
 ) => any;
 
 interface ExtendableVueKuzzleQueryOptions<V, R> {
@@ -46,17 +66,31 @@ interface ExtendableVueKuzzleQueryOptions<V, R> {
   deep?: boolean;
 }
 
+type KuzzleDocumentResponse<R> =
+  | KuzzleDocumentGetResponse<R>
+  | KuzzleDocumentUpdateResponse;
+
+type KuzzleDocumentOperation = 'get' | 'subscription' | 'create' | 'update' | 'replace';
+
 export interface VueKuzzleDocumentOptions<V, R>
   extends ExtendableVueKuzzleQueryOptions<V, R> {
   subscribe?: boolean;
   document: ((this: VueKuzzleThisType<V>) => string) | string;
+  /**
+   * Apply a transformation to get or update responses.
+   */
   update?: (
     this: VueKuzzleThisType<V>,
     data: R,
-    resp: KuzzleDocumentGetResponse<R> | KuzzleDocumentUpdateResponse,
-    op: 'get' | 'subscription' | 'update' | 'replace',
+    resp: KuzzleDocumentResponse<R>,
+    op: KuzzleDocumentOperation,
   ) => any;
-  changeFilter?: ChangeFilter<V>;
+  /**
+   * Apply a transformation to documents before they are sent to
+   * the server. The returned document will be sent to the server.
+   * Returning null or an empty object will cancel the change.
+   */
+  beforeChange?: ChangeFilter<V>;
 }
 
 export interface VueKuzzleSearchOptions<V, R>

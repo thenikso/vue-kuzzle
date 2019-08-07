@@ -15,7 +15,7 @@ import {
   KuzzleDocumentCreateReplaceResponse,
 } from 'kuzzle-sdk';
 
-export class VueKuzzle extends KuzzleProvider implements PluginObject<{}> {
+export class VueKuzzle<V = Vue> extends KuzzleProvider<V> implements PluginObject<{}> {
   [key: string]: any;
   install: PluginFunction<{}>;
 
