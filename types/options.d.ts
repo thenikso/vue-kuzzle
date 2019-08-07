@@ -15,7 +15,7 @@ export type ErrorHandler<V> = (this: VueKuzzleThisType<V>, error: any) => void;
 export type VueKuzzleSearchConfig = {
   query?: object;
   aggregations?: object;
-  sort?: object[];
+  sort?: (string | object)[];
   from?: number;
   size?: number;
 };
