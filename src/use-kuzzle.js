@@ -130,12 +130,25 @@ export function useKuzzle(config) {
         size: (options && options.size) || 10,
       },
     );
-    let hits = (_kuzzle_response.hits || [])
-      .slice()
-      .map(({ _source }) => _source);
+    let hits = (_kuzzle_response.hits || []).map(({ _source }) => _source);
     hits = afterFetch.call(null, hits, _kuzzle_response, 'search');
     hits._kuzzle_response = _kuzzle_response;
     return hits;
+  };
+
+  const fetchMore = async response => {
+    if (typeof response._kuzzle_response !== 'undefined') {
+      response = response._kuzzle_response;
+    }
+    const moreResponse = await response.next();
+    if (!moreResponse) {
+      return [];
+    }
+
+    let fetchMoreData = moreResponse.hits.map(({ _source }) => _source);
+    fetchMoreData = afterFetch.call(null, fetchMoreData, response, 'search');
+
+    return fetchMoreData;
   };
 
   const create = async (doc, options) => {
@@ -233,6 +246,7 @@ export function useKuzzle(config) {
     query,
     get,
     search,
+    fetchMore,
     create,
     change,
     delete: deleteDoc,
@@ -524,12 +538,9 @@ export function searchKuzzle(options) {
 
     isLoading.value = true;
     try {
-      const moreResponse = await response.value.next();
-      const fetchMoreData = moreResponse.hits.map(({ _source }) => _source);
-      if (fetchMoreData.length > 0) {
-        setData([...data.value, ...fetchMoreData], response.value);
-        return fetchMoreData;
-      }
+      const fetchMoreData = await kuzzle.fetchMore(response.value);
+      setData([...data.value, ...fetchMoreData], response.value);
+      return fetchMoreData;
     } catch (err) {
       setError(err);
     }

@@ -40,6 +40,8 @@ export default class SmartQuery extends SmartKuzzle {
     this.setLoading();
     let response;
     try {
+      await this.vm.$kuzzle.provider.connectAll();
+
       response = await this.client.document.get(
         this.index,
         this.collection,

@@ -89,7 +89,7 @@ export class DollarKuzzle {
       id,
     );
     return {
-      ...response._source,
+      ...this.applyAfterFetch(response._source, response, 'get'),
       _kuzzle_response: response,
     };
   }
@@ -112,7 +112,8 @@ export class DollarKuzzle {
         size: (options && options.size) || 10,
       },
     );
-    const hits = (_kuzzle_response.hits || []).slice();
+    let hits = (_kuzzle_response.hits || []).map(({ _source }) => _source);
+    hits = this.applyAfterFetch(hits, _kuzzle_response, 'search');
     hits._kuzzle_response = _kuzzle_response;
     return hits;
   }
@@ -149,7 +150,11 @@ export class DollarKuzzle {
       },
     );
     return {
-      ..._kuzzle_response._source,
+      ...this.applyAfterFetch(
+        _kuzzle_response._source,
+        _kuzzle_response,
+        _kuzzle_response.created ? 'create' : _kuzzle_response.result,
+      ),
       _kuzzle_response,
     };
   }
@@ -181,7 +186,11 @@ export class DollarKuzzle {
       },
     );
     return {
-      ..._kuzzle_response._source,
+      ...this.applyAfterFetch(
+        _kuzzle_response._source,
+        _kuzzle_response,
+        _kuzzle_response.response,
+      ),
       _kuzzle_response,
     };
   }
@@ -261,6 +270,13 @@ export class DollarKuzzle {
   //     return smart;
   //   }
   // }
+
+  applyAfterFetch(data, request, operation) {
+    if (typeof this.provider.afterFetch !== 'function') {
+      return data;
+    }
+    return this.provider.afterFetch.call(this.vm, data, request, operation);
+  }
 
   defineReactiveSetter(key, func, deep) {
     this._watchers.push(
