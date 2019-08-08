@@ -792,47 +792,51 @@
                   this.setLoading();
                   _context.prev = 3;
                   _context.next = 6;
-                  return this.client.document.get(this.index, this.collection, id);
+                  return this.vm.$kuzzle.provider.connectAll();
 
                 case 6:
+                  _context.next = 8;
+                  return this.client.document.get(this.index, this.collection, id);
+
+                case 8:
                   response = _context.sent;
 
                   if (!response) {
-                    _context.next = 10;
+                    _context.next = 12;
                     break;
                   }
 
-                  _context.next = 10;
+                  _context.next = 12;
                   return this.nextResult(response._source, response, 'get');
 
-                case 10:
+                case 12:
                   this.loadingDone(null, response._source);
-                  _context.next = 16;
+                  _context.next = 18;
                   break;
 
-                case 13:
-                  _context.prev = 13;
+                case 15:
+                  _context.prev = 15;
                   _context.t0 = _context["catch"](3);
                   this.catchError(_context.t0);
 
-                case 16:
+                case 18:
                   if (!subscribe) {
-                    _context.next = 19;
+                    _context.next = 21;
                     break;
                   }
 
-                  _context.next = 19;
+                  _context.next = 21;
                   return this.startDocumentSubscription(id);
 
-                case 19:
+                case 21:
                   _get(_getPrototypeOf(SmartQuery.prototype), "executeKuzzle", this).call(this);
 
-                case 20:
+                case 22:
                 case "end":
                   return _context.stop();
               }
             }
-          }, _callee, this, [[3, 13]]);
+          }, _callee, this, [[3, 15]]);
         }));
 
         function executeKuzzle() {
@@ -1323,6 +1327,10 @@
                   search = this.options.search;
                   _context.prev = 1;
                   _context.next = 4;
+                  return this.vm.$kuzzle.provider.connectAll();
+
+                case 4:
+                  _context.next = 6;
                   return this.client.document.search(this.index, this.collection, {
                     query: search.query,
                     aggregations: search.aggregations,
@@ -1332,30 +1340,31 @@
                     size: search.size || 10
                   });
 
-                case 4:
+                case 6:
                   this.response = _context.sent;
                   data = this.response.hits.map(function (_ref) {
                     var _source = _ref._source;
                     return _source;
                   });
+                  data = this.applyAfterFetch(data, this.response);
                   this.nextResult(data, this.response);
-                  _context.next = 12;
+                  _context.next = 15;
                   break;
 
-                case 9:
-                  _context.prev = 9;
+                case 12:
+                  _context.prev = 12;
                   _context.t0 = _context["catch"](1);
                   this.catchError(_context.t0);
 
-                case 12:
+                case 15:
                   _get(_getPrototypeOf(SmartSearch.prototype), "executeKuzzle", this).call(this);
 
-                case 13:
+                case 16:
                 case "end":
                   return _context.stop();
               }
             }
-          }, _callee, this, [[1, 9]]);
+          }, _callee, this, [[1, 12]]);
         }));
 
         function executeKuzzle() {
@@ -1395,6 +1404,7 @@
                   });
 
                   if (fetchMoreData) {
+                    fetchMoreData = this.applyAfterFetch(fetchMoreData, moreResponse);
                     data = [].concat(_toConsumableArray(this.getData()), _toConsumableArray(fetchMoreData));
                     this.nextResult(data, moreResponse);
                   }
@@ -1424,15 +1434,20 @@
     }, {
       key: "nextResult",
       value: function nextResult(data, response) {
-        if (typeof this.vm.$kuzzle.provider.afterFetch === 'function') {
-          doc = this.vm.$kuzzle.provider.afterFetch.call(this.vm, data, response, 'search');
-        }
-
         if (typeof this.options.update === 'function') {
           this.setData(this.options.update.call(this.vm, data, response));
         } else {
           this.setData(data);
         }
+      }
+    }, {
+      key: "applyAfterFetch",
+      value: function applyAfterFetch(data, response) {
+        if (typeof this.vm.$kuzzle.provider.afterFetch !== 'function') {
+          return data;
+        }
+
+        return this.vm.$kuzzle.provider.afterFetch.call(this.vm, data, response, 'search');
       }
     }, {
       key: "hasMore",
@@ -1533,7 +1548,7 @@
 
                 case 3:
                   response = _context.sent;
-                  return _context.abrupt("return", _objectSpread({}, response._source, {
+                  return _context.abrupt("return", _objectSpread({}, this.applyAfterFetch(response._source, response, 'get'), {
                     _kuzzle_response: response
                   }));
 
@@ -1576,11 +1591,15 @@
 
                 case 3:
                   _kuzzle_response = _context2.sent;
-                  hits = (_kuzzle_response.hits || []).slice();
+                  hits = (_kuzzle_response.hits || []).map(function (_ref) {
+                    var _source = _ref._source;
+                    return _source;
+                  });
+                  hits = this.applyAfterFetch(hits, _kuzzle_response, 'search');
                   hits._kuzzle_response = _kuzzle_response;
                   return _context2.abrupt("return", hits);
 
-                case 7:
+                case 8:
                 case "end":
                   return _context2.stop();
               }
@@ -1637,7 +1656,7 @@
 
                 case 9:
                   _kuzzle_response = _context3.sent;
-                  return _context3.abrupt("return", _objectSpread({}, _kuzzle_response._source, {
+                  return _context3.abrupt("return", _objectSpread({}, this.applyAfterFetch(_kuzzle_response._source, _kuzzle_response, _kuzzle_response.created ? 'create' : _kuzzle_response.result), {
                     _kuzzle_response: _kuzzle_response
                   }));
 
@@ -1690,7 +1709,7 @@
 
                 case 7:
                   _kuzzle_response = _context4.sent;
-                  return _context4.abrupt("return", _objectSpread({}, _kuzzle_response._source, {
+                  return _context4.abrupt("return", _objectSpread({}, this.applyAfterFetch(_kuzzle_response._source, _kuzzle_response, _kuzzle_response.response), {
                     _kuzzle_response: _kuzzle_response
                   }));
 
@@ -1770,6 +1789,15 @@
       //   }
       // }
 
+    }, {
+      key: "applyAfterFetch",
+      value: function applyAfterFetch(data, request, operation) {
+        if (typeof this.provider.afterFetch !== 'function') {
+          return data;
+        }
+
+        return this.provider.afterFetch.call(this.vm, data, request, operation);
+      }
     }, {
       key: "defineReactiveSetter",
       value: function defineReactiveSetter(key, func, deep) {
@@ -2206,7 +2234,7 @@
 
               case 3:
                 _kuzzle_response = _context2.sent;
-                hits = (_kuzzle_response.hits || []).slice().map(function (_ref3) {
+                hits = (_kuzzle_response.hits || []).map(function (_ref3) {
                   var _source = _ref3._source;
                   return _source;
                 });
@@ -2227,54 +2255,43 @@
       };
     }();
 
-    var create =
+    var fetchMore =
     /*#__PURE__*/
     function () {
       var _ref4 = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee3(doc, options) {
-        var _getIndexAndCollectio4, index, collection, _kuzzle_response;
-
+      regeneratorRuntime.mark(function _callee3(response) {
+        var moreResponse, fetchMoreData;
         return regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) {
             switch (_context3.prev = _context3.next) {
               case 0:
-                _getIndexAndCollectio4 = getIndexAndCollection(options, 'createDocument'), index = _getIndexAndCollectio4.index, collection = _getIndexAndCollectio4.collection;
+                if (typeof response._kuzzle_response !== 'undefined') {
+                  response = response._kuzzle_response;
+                }
 
-                if (!(options && options.replace === true)) {
-                  _context3.next = 7;
+                _context3.next = 3;
+                return response.next();
+
+              case 3:
+                moreResponse = _context3.sent;
+
+                if (moreResponse) {
+                  _context3.next = 6;
                   break;
                 }
 
-                if (options.id) {
-                  _context3.next = 4;
-                  break;
-                }
-
-                throw new Error("[vue-kuzzle] Missing 'id' in 'createDocument' called with 'replace: true'");
-
-              case 4:
-                _context3.next = 6;
-                return getClient(options).document.createOrReplace(index, collection, options && options.id, doc, {
-                  refresh: 'wait_for'
-                });
+                return _context3.abrupt("return", []);
 
               case 6:
-                _kuzzle_response = _context3.sent;
-
-              case 7:
-                _context3.next = 9;
-                return getClient(options).document.create(index, collection, doc, options && options.id, {
-                  refresh: 'wait_for'
+                fetchMoreData = moreResponse.hits.map(function (_ref5) {
+                  var _source = _ref5._source;
+                  return _source;
                 });
+                fetchMoreData = afterFetch.call(null, fetchMoreData, response, 'search');
+                return _context3.abrupt("return", fetchMoreData);
 
               case 9:
-                _kuzzle_response = _context3.sent;
-                return _context3.abrupt("return", _objectSpread({}, afterFetch.call(null, _kuzzle_response._source, _kuzzle_response, _kuzzle_response.created ? 'create' : _kuzzle_response.result), {
-                  _kuzzle_response: _kuzzle_response
-                }));
-
-              case 11:
               case "end":
                 return _context3.stop();
             }
@@ -2282,51 +2299,59 @@
         }, _callee3);
       }));
 
-      return function create(_x5, _x6) {
+      return function fetchMore(_x5) {
         return _ref4.apply(this, arguments);
       };
     }();
 
-    var change =
+    var create =
     /*#__PURE__*/
     function () {
-      var _ref5 = _asyncToGenerator(
+      var _ref6 = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee4(id, doc, options) {
-        var _getIndexAndCollectio5, index, collection, _kuzzle_response;
+      regeneratorRuntime.mark(function _callee4(doc, options) {
+        var _getIndexAndCollectio4, index, collection, _kuzzle_response;
 
         return regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) {
             switch (_context4.prev = _context4.next) {
               case 0:
-                _getIndexAndCollectio5 = getIndexAndCollection(options, 'changeDocument'), index = _getIndexAndCollectio5.index, collection = _getIndexAndCollectio5.collection;
+                _getIndexAndCollectio4 = getIndexAndCollection(options, 'createDocument'), index = _getIndexAndCollectio4.index, collection = _getIndexAndCollectio4.collection;
 
                 if (!(options && options.replace === true)) {
-                  _context4.next = 5;
+                  _context4.next = 7;
                   break;
                 }
 
-                _context4.next = 4;
-                return getClient(options).document.replace(index, collection, id, doc, {
-                  refresh: 'wait_for'
-                });
+                if (options.id) {
+                  _context4.next = 4;
+                  break;
+                }
+
+                throw new Error("[vue-kuzzle] Missing 'id' in 'createDocument' called with 'replace: true'");
 
               case 4:
-                _kuzzle_response = _context4.sent;
-
-              case 5:
-                _context4.next = 7;
-                return getClient(options).document.update(index, collection, id, doc, {
+                _context4.next = 6;
+                return getClient(options).document.createOrReplace(index, collection, options && options.id, doc, {
                   refresh: 'wait_for'
                 });
 
-              case 7:
+              case 6:
                 _kuzzle_response = _context4.sent;
-                return _context4.abrupt("return", _objectSpread({}, afterFetch.call(null, _kuzzle_response._source, _kuzzle_response, _kuzzle_response.response), {
+
+              case 7:
+                _context4.next = 9;
+                return getClient(options).document.create(index, collection, doc, options && options.id, {
+                  refresh: 'wait_for'
+                });
+
+              case 9:
+                _kuzzle_response = _context4.sent;
+                return _context4.abrupt("return", _objectSpread({}, afterFetch.call(null, _kuzzle_response._source, _kuzzle_response, _kuzzle_response.created ? 'create' : _kuzzle_response.result), {
                   _kuzzle_response: _kuzzle_response
                 }));
 
-              case 9:
+              case 11:
               case "end":
                 return _context4.stop();
             }
@@ -2334,8 +2359,60 @@
         }, _callee4);
       }));
 
-      return function change(_x7, _x8, _x9) {
-        return _ref5.apply(this, arguments);
+      return function create(_x6, _x7) {
+        return _ref6.apply(this, arguments);
+      };
+    }();
+
+    var change =
+    /*#__PURE__*/
+    function () {
+      var _ref7 = _asyncToGenerator(
+      /*#__PURE__*/
+      regeneratorRuntime.mark(function _callee5(id, doc, options) {
+        var _getIndexAndCollectio5, index, collection, _kuzzle_response;
+
+        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                _getIndexAndCollectio5 = getIndexAndCollection(options, 'changeDocument'), index = _getIndexAndCollectio5.index, collection = _getIndexAndCollectio5.collection;
+
+                if (!(options && options.replace === true)) {
+                  _context5.next = 5;
+                  break;
+                }
+
+                _context5.next = 4;
+                return getClient(options).document.replace(index, collection, id, doc, {
+                  refresh: 'wait_for'
+                });
+
+              case 4:
+                _kuzzle_response = _context5.sent;
+
+              case 5:
+                _context5.next = 7;
+                return getClient(options).document.update(index, collection, id, doc, {
+                  refresh: 'wait_for'
+                });
+
+              case 7:
+                _kuzzle_response = _context5.sent;
+                return _context5.abrupt("return", _objectSpread({}, afterFetch.call(null, _kuzzle_response._source, _kuzzle_response, _kuzzle_response.response), {
+                  _kuzzle_response: _kuzzle_response
+                }));
+
+              case 9:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5);
+      }));
+
+      return function change(_x8, _x9, _x10) {
+        return _ref7.apply(this, arguments);
       };
     }();
 
@@ -2355,6 +2432,7 @@
       query: query,
       get: get,
       search: search,
+      fetchMore: fetchMore,
       create: create,
       change: change,
       delete: deleteDoc,
@@ -2398,36 +2476,36 @@
     },
     /*#__PURE__*/
     function () {
-      var _ref6 = _asyncToGenerator(
+      var _ref8 = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee5(id) {
-        var _ref7, _kuzzle_response, dataValue;
+      regeneratorRuntime.mark(function _callee6(id) {
+        var _ref9, _kuzzle_response, dataValue;
 
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
           while (1) {
-            switch (_context5.prev = _context5.next) {
+            switch (_context6.prev = _context6.next) {
               case 0:
                 if (id) {
-                  _context5.next = 2;
+                  _context6.next = 2;
                   break;
                 }
 
-                return _context5.abrupt("return");
+                return _context6.abrupt("return");
 
               case 2:
                 isReading.value = true;
-                _context5.next = 5;
+                _context6.next = 5;
                 return kuzzle.provider.connectAll();
 
               case 5:
-                _context5.prev = 5;
-                _context5.next = 8;
+                _context6.prev = 5;
+                _context6.next = 8;
                 return kuzzle.get(id, options);
 
               case 8:
-                _ref7 = _context5.sent;
-                _kuzzle_response = _ref7._kuzzle_response;
-                dataValue = _objectWithoutProperties(_ref7, ["_kuzzle_response"]);
+                _ref9 = _context6.sent;
+                _kuzzle_response = _ref9._kuzzle_response;
+                dataValue = _objectWithoutProperties(_ref9, ["_kuzzle_response"]);
                 isReading.value = false;
 
                 if (options.update) {
@@ -2440,24 +2518,24 @@
                   changePromise = Promise.resolve(rawData.value);
                 }
 
-                _context5.next = 19;
+                _context6.next = 19;
                 break;
 
               case 16:
-                _context5.prev = 16;
-                _context5.t0 = _context5["catch"](5);
-                setError(_context5.t0);
+                _context6.prev = 16;
+                _context6.t0 = _context6["catch"](5);
+                setError(_context6.t0);
 
               case 19:
               case "end":
-                return _context5.stop();
+                return _context6.stop();
             }
           }
-        }, _callee5, null, [[5, 16]]);
+        }, _callee6, null, [[5, 16]]);
       }));
 
-      return function (_x10) {
-        return _ref6.apply(this, arguments);
+      return function (_x11) {
+        return _ref8.apply(this, arguments);
       };
     }(), {
       lazy: false
@@ -2466,13 +2544,13 @@
     var change =
     /*#__PURE__*/
     function () {
-      var _ref8 = _asyncToGenerator(
+      var _ref10 = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee7(newDoc) {
+      regeneratorRuntime.mark(function _callee8(newDoc) {
         var currentChangeRun;
-        return regeneratorRuntime.wrap(function _callee7$(_context7) {
+        return regeneratorRuntime.wrap(function _callee8$(_context8) {
           while (1) {
-            switch (_context7.prev = _context7.next) {
+            switch (_context8.prev = _context8.next) {
               case 0:
                 isWriting.value = true;
 
@@ -2483,14 +2561,14 @@
                 currentChangeRun = changePromise = changePromise.then(
                 /*#__PURE__*/
                 function () {
-                  var _ref9 = _asyncToGenerator(
+                  var _ref11 = _asyncToGenerator(
                   /*#__PURE__*/
-                  regeneratorRuntime.mark(function _callee6(savedDoc) {
+                  regeneratorRuntime.mark(function _callee7(savedDoc) {
                     var isUpdate, changeDoc, _kuzzle$getIndexAndCo, index, collection, changeContext, beforeChange, client, updateResp, serverDoc, returnDoc;
 
-                    return regeneratorRuntime.wrap(function _callee6$(_context6) {
+                    return regeneratorRuntime.wrap(function _callee7$(_context7) {
                       while (1) {
-                        switch (_context6.prev = _context6.next) {
+                        switch (_context7.prev = _context7.next) {
                           case 0:
                             isUpdate = savedDoc && Object.keys(savedDoc).every(function (key) {
                               return key === '_kuzzle_info' || newDoc.hasOwnProperty(key);
@@ -2510,97 +2588,97 @@
                             beforeChange = options.beforeChange || kuzzle.provider.beforeChange;
 
                             if (!(typeof beforeChange === 'function')) {
-                              _context6.next = 16;
+                              _context7.next = 16;
                               break;
                             }
 
-                            _context6.prev = 6;
-                            _context6.next = 9;
+                            _context7.prev = 6;
+                            _context7.next = 9;
                             return Promise.resolve(beforeChange.call(null, changeDoc, changeContext));
 
                           case 9:
-                            changeDoc = _context6.sent;
-                            _context6.next = 16;
+                            changeDoc = _context7.sent;
+                            _context7.next = 16;
                             break;
 
                           case 12:
-                            _context6.prev = 12;
-                            _context6.t0 = _context6["catch"](6);
-                            setError(_context6.t0);
-                            return _context6.abrupt("return", savedDoc);
+                            _context7.prev = 12;
+                            _context7.t0 = _context7["catch"](6);
+                            setError(_context7.t0);
+                            return _context7.abrupt("return", savedDoc);
 
                           case 16:
                             if (!(!changeDoc || Object.keys(changeDoc).length === 0)) {
-                              _context6.next = 19;
+                              _context7.next = 19;
                               break;
                             }
 
                             isWriting.value = false;
-                            return _context6.abrupt("return", savedDoc);
+                            return _context7.abrupt("return", savedDoc);
 
                           case 19:
                             // Attempt change
                             client = kuzzle.getClient(options);
-                            _context6.prev = 20;
+                            _context7.prev = 20;
 
                             if (documentId.value) {
-                              _context6.next = 27;
+                              _context7.next = 27;
                               break;
                             }
 
-                            _context6.next = 24;
+                            _context7.next = 24;
                             return client.document.create(index, collection, changeDoc, null, {
                               refresh: 'wait_for'
                             });
 
                           case 24:
-                            updateResp = _context6.sent;
-                            _context6.next = 36;
+                            updateResp = _context7.sent;
+                            _context7.next = 36;
                             break;
 
                           case 27:
                             if (isUpdate) {
-                              _context6.next = 33;
+                              _context7.next = 33;
                               break;
                             }
 
-                            _context6.next = 30;
+                            _context7.next = 30;
                             return client.document.createOrReplace(index, collection, documentId.value, changeDoc, {
                               refresh: 'wait_for'
                             });
 
                           case 30:
-                            updateResp = _context6.sent;
-                            _context6.next = 36;
+                            updateResp = _context7.sent;
+                            _context7.next = 36;
                             break;
 
                           case 33:
-                            _context6.next = 35;
+                            _context7.next = 35;
                             return client.document.update(index, collection, documentId.value, changeDoc, {
                               refresh: 'wait_for'
                             });
 
                           case 35:
-                            updateResp = _context6.sent;
+                            updateResp = _context7.sent;
 
                           case 36:
-                            _context6.next = 38;
+                            _context7.next = 38;
                             return client.document.get(index, collection, updateResp._id);
 
                           case 38:
-                            serverDoc = _context6.sent._source;
+                            serverDoc = _context7.sent._source;
                             returnDoc = serverDoc;
 
                             if (!(typeof options.update === 'function')) {
-                              _context6.next = 44;
+                              _context7.next = 44;
                               break;
                             }
 
-                            _context6.next = 43;
+                            _context7.next = 43;
                             return Promise.resolve(options.update(serverDoc, updateResp, updateResp.created ? 'created' : updateResp.result));
 
                           case 43:
-                            returnDoc = _context6.sent;
+                            returnDoc = _context7.sent;
 
                           case 44:
                             if (changePromise === currentChangeRun) {
@@ -2608,40 +2686,40 @@
                             }
 
                             isWriting.value = false;
-                            return _context6.abrupt("return", returnDoc);
+                            return _context7.abrupt("return", returnDoc);
 
                           case 49:
-                            _context6.prev = 49;
-                            _context6.t1 = _context6["catch"](20);
-                            setError(_context6.t1);
-                            return _context6.abrupt("return", savedDoc);
+                            _context7.prev = 49;
+                            _context7.t1 = _context7["catch"](20);
+                            setError(_context7.t1);
+                            return _context7.abrupt("return", savedDoc);
 
                           case 53:
                           case "end":
-                            return _context6.stop();
+                            return _context7.stop();
                         }
                       }
-                    }, _callee6, null, [[6, 12], [20, 49]]);
+                    }, _callee7, null, [[6, 12], [20, 49]]);
                   }));
 
-                  return function (_x12) {
-                    return _ref9.apply(this, arguments);
+                  return function (_x13) {
+                    return _ref11.apply(this, arguments);
                   };
                 }());
-                return _context7.abrupt("return", currentChangeRun.then(function () {
+                return _context8.abrupt("return", currentChangeRun.then(function () {
                   return rawData.value;
                 }));
 
               case 4:
               case "end":
-                return _context7.stop();
+                return _context8.stop();
             }
           }
-        }, _callee7);
+        }, _callee8);
       }));
 
-      return function change(_x11) {
-        return _ref8.apply(this, arguments);
+      return function change(_x12) {
+        return _ref10.apply(this, arguments);
       };
     }();
 
@@ -2698,29 +2776,29 @@
     var requestSearch =
     /*#__PURE__*/
     function () {
-      var _ref10 = _asyncToGenerator(
+      var _ref12 = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee8(search) {
+      regeneratorRuntime.mark(function _callee9(search) {
         var resp;
-        return regeneratorRuntime.wrap(function _callee8$(_context8) {
+        return regeneratorRuntime.wrap(function _callee9$(_context9) {
           while (1) {
-            switch (_context8.prev = _context8.next) {
+            switch (_context9.prev = _context9.next) {
               case 0:
                 if (search) {
-                  _context8.next = 2;
+                  _context9.next = 2;
                   break;
                 }
 
-                return _context8.abrupt("return");
+                return _context9.abrupt("return");
 
               case 2:
                 isLoading.value = true;
-                _context8.next = 5;
+                _context9.next = 5;
                 return kuzzle.provider.connectAll();
 
               case 5:
-                _context8.prev = 5;
-                _context8.next = 8;
+                _context9.prev = 5;
+                _context9.next = 8;
                 return kuzzle.search(search.query || {}, _objectSpread({}, options, {
                   aggregations: search.aggregations,
                   sort: search.sort,
@@ -2729,27 +2807,27 @@
                 }));
 
               case 8:
-                resp = _context8.sent;
+                resp = _context9.sent;
                 isLoading.value = false;
                 setData(resp, resp._kuzzle_response);
-                _context8.next = 16;
+                _context9.next = 16;
                 break;
 
               case 13:
-                _context8.prev = 13;
-                _context8.t0 = _context8["catch"](5);
-                setError(_context8.t0);
+                _context9.prev = 13;
+                _context9.t0 = _context9["catch"](5);
+                setError(_context9.t0);
 
               case 16:
               case "end":
-                return _context8.stop();
+                return _context9.stop();
             }
           }
-        }, _callee8, null, [[5, 13]]);
+        }, _callee9, null, [[5, 13]]);
       }));
 
-      return function requestSearch(_x13) {
-        return _ref10.apply(this, arguments);
+      return function requestSearch(_x14) {
+        return _ref12.apply(this, arguments);
       };
     }();
 
@@ -2769,61 +2847,47 @@
     var fetchMore =
     /*#__PURE__*/
     function () {
-      var _ref11 = _asyncToGenerator(
+      var _ref13 = _asyncToGenerator(
       /*#__PURE__*/
-      regeneratorRuntime.mark(function _callee9() {
-        var moreResponse, fetchMoreData;
-        return regeneratorRuntime.wrap(function _callee9$(_context9) {
+      regeneratorRuntime.mark(function _callee10() {
+        var fetchMoreData;
+        return regeneratorRuntime.wrap(function _callee10$(_context10) {
           while (1) {
-            switch (_context9.prev = _context9.next) {
+            switch (_context10.prev = _context10.next) {
               case 0:
                 if (response.value) {
-                  _context9.next = 2;
+                  _context10.next = 2;
                   break;
                 }
 
-                return _context9.abrupt("return");
+                return _context10.abrupt("return");
 
               case 2:
                 isLoading.value = true;
-                _context9.prev = 3;
-                _context9.next = 6;
-                return response.value.next();
+                _context10.prev = 3;
+                _context10.next = 6;
+                return kuzzle.fetchMore(response.value);
 
               case 6:
-                moreResponse = _context9.sent;
-                fetchMoreData = moreResponse.hits.map(function (_ref12) {
-                  var _source = _ref12._source;
-                  return _source;
-                });
-
-                if (!(fetchMoreData.length > 0)) {
-                  _context9.next = 11;
-                  break;
-                }
-
+                fetchMoreData = _context10.sent;
                 setData([].concat(_toConsumableArray(data.value), _toConsumableArray(fetchMoreData)), response.value);
-                return _context9.abrupt("return", fetchMoreData);
+                return _context10.abrupt("return", fetchMoreData);
 
               case 11:
-                _context9.next = 16;
-                break;
+                _context10.prev = 11;
+                _context10.t0 = _context10["catch"](3);
+                setError(_context10.t0);
 
-              case 13:
-                _context9.prev = 13;
-                _context9.t0 = _context9["catch"](3);
-                setError(_context9.t0);
-
-              case 16:
+              case 14:
               case "end":
-                return _context9.stop();
+                return _context10.stop();
             }
           }
-        }, _callee9, null, [[3, 13]]);
+        }, _callee10, null, [[3, 11]]);
       }));
 
       return function fetchMore() {
-        return _ref11.apply(this, arguments);
+        return _ref13.apply(this, arguments);
       };
     }();
 
