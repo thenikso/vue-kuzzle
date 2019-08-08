@@ -1,6 +1,8 @@
 import { inject, value, computed, watch } from 'vue-function-api';
 import { getRootChanges } from './utils';
 
+export const KUZZLE_PROVIDER_KEY = Symbol('kuzzleProvider');
+
 export function useKuzzle(config) {
   const configProvider = config && config.provider;
   const cached = getFromCache(configProvider, config);
@@ -8,7 +10,7 @@ export function useKuzzle(config) {
     return cached;
   }
 
-  const provider = configProvider || inject('kuzzleProvider');
+  const provider = configProvider || inject(KUZZLE_PROVIDER_KEY).value;
   if (!provider) {
     throw new Error(
       `[useKuzzle] Missing 'kuzzleProvider' to be provided via 'provide'`,

@@ -19,6 +19,8 @@ import { KuzzleProvider } from './kuzzle-provider';
 import { Wrapper } from 'vue-function-api';
 import { VueKuzzleDocumentOptions, VueKuzzleSearchOptions } from './options';
 
+export const KUZZLE_PROVIDER_KEY: Symbol;
+
 export type UseKuzzleConfig = {
   provider?: KuzzleProvider;
   client?: string | Kuzzle;
@@ -94,5 +96,5 @@ export function searchKuzzle<R = any>(
   error: Wrapper<Error>;
   hasMore: Wrapper<boolean>;
   fetchMore: () => Promise<R[] | undefined>;
-  refresh: () => Promise<void>
+  refresh: () => Promise<void>;
 };
