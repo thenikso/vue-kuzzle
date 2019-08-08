@@ -2043,6 +2043,7 @@
     }));
   }
 
+  var KUZZLE_PROVIDER_KEY = Symbol('kuzzleProvider');
   function useKuzzle(config) {
     var configProvider = config && config.provider;
     var cached = getFromCache(configProvider, config);
@@ -2051,7 +2052,7 @@
       return cached;
     }
 
-    var provider = configProvider || vueFunctionApi.inject('kuzzleProvider');
+    var provider = configProvider || vueFunctionApi.inject(KUZZLE_PROVIDER_KEY).value;
 
     if (!provider) {
       throw new Error("[useKuzzle] Missing 'kuzzleProvider' to be provided via 'provide'");
@@ -2924,6 +2925,7 @@
   exports.install = install;
   exports.KuzzleProvider = KuzzleProvider$1;
   exports.default = KuzzleProvider;
+  exports.KUZZLE_PROVIDER_KEY = KUZZLE_PROVIDER_KEY;
   exports.useKuzzle = useKuzzle;
   exports.fetchKuzzle = fetchKuzzle;
   exports.searchKuzzle = searchKuzzle;

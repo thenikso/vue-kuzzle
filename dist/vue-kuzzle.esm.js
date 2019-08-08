@@ -2039,6 +2039,7 @@ function installMixin(Vue, vueVersion) {
   }));
 }
 
+var KUZZLE_PROVIDER_KEY = Symbol('kuzzleProvider');
 function useKuzzle(config) {
   var configProvider = config && config.provider;
   var cached = getFromCache(configProvider, config);
@@ -2047,7 +2048,7 @@ function useKuzzle(config) {
     return cached;
   }
 
-  var provider = configProvider || inject('kuzzleProvider');
+  var provider = configProvider || inject(KUZZLE_PROVIDER_KEY).value;
 
   if (!provider) {
     throw new Error("[useKuzzle] Missing 'kuzzleProvider' to be provided via 'provide'");
@@ -2918,4 +2919,4 @@ if (GlobalVue) {
 }
 
 export default KuzzleProvider;
-export { install, KuzzleProvider$1 as KuzzleProvider, useKuzzle, fetchKuzzle, searchKuzzle };
+export { install, KuzzleProvider$1 as KuzzleProvider, KUZZLE_PROVIDER_KEY, useKuzzle, fetchKuzzle, searchKuzzle };
