@@ -41,11 +41,11 @@
   },
   "homepage": "https://github.com/thenikso/vue-kuzzle#readme",
   "peerDependencies": {
-    "kuzzle-sdk": "^6.0.0"
+    "kuzzle-sdk": "^6.0.0",
+    "vue-function-api": "^2.2.0"
   },
   "dependencies": {
-    "throttle-debounce": "^2.1.0",
-    "vue-function-api": "2.1.1"
+    "throttle-debounce": "^2.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.1.2",
